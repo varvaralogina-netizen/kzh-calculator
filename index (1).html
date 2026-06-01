@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>КЖ-Калькулятор — SF-36 и EQ-5D</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#f0f2f5;--surface:#fff;--surface2:#f7f8fa;--border:#e0e4eb;
+  --primary:#2563eb;--primary-light:#eff6ff;--primary-dark:#1d4ed8;
+  --success:#16a34a;--success-light:#f0fdf4;--danger:#dc2626;--danger-light:#fef2f2;
+  --warning:#d97706;--warning-light:#fffbeb;--info:#0891b2;--info-light:#ecfeff;
+  --text:#111827;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;
+  --radius:8px;--radius-lg:12px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow:0 2px 8px rgba(0,0,0,.1);--shadow-lg:0 4px 16px rgba(0,0,0,.12);
+  --font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
+.app-logo{display:flex;align-items:center;gap:12px;}
+.app-logo-icon{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;}
+.app-logo-text{font-size:16px;font-weight:600;}
+.app-logo-sub{font-size:11px;color:var(--text3);}
+.system-tabs{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:10px;border:1px solid var(--border);}
+.system-tab{padding:7px 20px;border:none;background:transparent;border-radius:7px;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .15s;}
+.system-tab.active{background:var(--surface);color:var(--primary);box-shadow:var(--shadow-sm);}
+.system-tab:hover:not(.active){color:var(--text2);background:rgba(0,0,0,.04);}
+.app-body{display:flex;height:calc(100vh - 69px);}
+.sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;overflow-y:auto;}
+.sidebar-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text4);padding:0 16px;margin-bottom:4px;}
+.sidebar-section{margin-bottom:8px;}
+.sidebar-btn{display:flex;align-items:center;gap:10px;width:100%;padding:9px 16px;border:none;background:transparent;font-family:var(--font);font-size:13px;color:var(--text2);cursor:pointer;transition:all .12s;text-align:left;}
+.sidebar-btn .icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+.sidebar-btn:hover{background:var(--bg);color:var(--text);}
+.sidebar-btn.active{background:var(--primary-light);color:var(--primary);font-weight:500;}
+.sidebar-divider{height:1px;background:var(--border);margin:8px 16px;}
+.main-content{flex:1;overflow-y:auto;padding:24px 28px;background:var(--bg);}
+.page-header{margin-bottom:20px;}
+.page-title{font-size:20px;font-weight:600;}
+.page-subtitle{font-size:13px;color:var(--text3);margin-top:3px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+.card-header{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:12px;font-weight:500;color:var(--text2);}
+.form-label .req{color:var(--danger);}
+input[type=text],input[type=number],input[type=date],select,textarea{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font);font-size:13px;color:var(--text);background:var(--surface);transition:border-color .15s,box-shadow .15s;outline:none;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+input.error,select.error{border-color:var(--danger);}
+.radio-group{display:flex;gap:8px;}
+.radio-pill{position:relative;flex:1;}
+.radio-pill input{position:absolute;opacity:0;width:0;}
+.radio-pill label{display:block;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);text-align:center;cursor:pointer;font-size:12px;font-weight:500;color:var(--text3);transition:all .15s;background:var(--surface2);}
+.radio-pill input:checked+label{border-color:var(--primary);background:var(--primary-light);color:var(--primary);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;text-decoration:none;}
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none;}
+.btn-primary{background:var(--primary);color:white;}.btn-primary:hover{background:var(--primary-dark);}
+.btn-success{background:var(--success);color:white;}.btn-success:hover{background:#15803d;}
+.btn-danger{background:var(--danger);color:white;}.btn-danger:hover{background:#b91c1c;}
+.btn-warning{background:var(--warning);color:white;}.btn-warning:hover{background:#b45309;}
+.btn-info{background:var(--info);color:white;}.btn-info:hover{background:#0e7490;}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}.btn-ghost:hover{background:var(--bg);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+.progress-wrap{margin-bottom:12px;}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:5px;}
+.progress-bar{height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--primary);border-radius:99px;transition:width .4s ease;}
+.progress-fill.complete{background:var(--success);}
+.question-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;transition:border-color .15s;}
+.question-block:hover{border-color:#c7d2fe;}
+.question-block.answered{border-left:3px solid var(--success);}
+.question-block.error-q{border-color:var(--danger);background:var(--danger-light);}
+.question-text{font-size:13px;color:var(--text2);margin-bottom:10px;font-weight:500;line-height:1.45;white-space:pre-line;}
+.options-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.opt{position:relative;}
+.opt input[type=radio]{position:absolute;opacity:0;width:0;}
+.opt label{display:block;padding:7px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;color:var(--text2);background:var(--surface2);transition:all .13s;white-space:nowrap;}
+.opt input:checked+label{background:var(--primary-light);border-color:var(--primary);color:var(--primary);font-weight:500;}
+.opt label:hover{background:#f0f4ff;border-color:#a5b4fc;}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.score-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.score-domain{font-size:12px;font-weight:500;color:var(--text3);margin-bottom:6px;}
+.score-bar-row{display:flex;align-items:center;gap:10px;}
+.score-val{font-size:16px;font-weight:600;color:var(--text);min-width:40px;}
+.score-bar-track{flex:1;height:8px;background:var(--border);border-radius:99px;overflow:hidden;}
+.score-bar-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.34,1.56,.64,1);}
+.score-bar-fill.high{background:var(--success);}
+.score-bar-fill.mid{background:var(--warning);}
+.score-bar-fill.low{background:var(--danger);}
+.summary-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+.summary-big{background:var(--primary-light);border:1px solid #bfdbfe;border-radius:var(--radius);padding:16px;text-align:center;}
+.summary-big .val{font-size:32px;font-weight:700;color:var(--primary);font-family:var(--mono);}
+.summary-big .lbl{font-size:11px;font-weight:500;color:var(--text3);margin-top:4px;}
+.eq-dimension{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;}
+.eq-dim-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+.eq-dim-desc{font-size:11px;color:var(--text3);margin-bottom:10px;}
+.eq-options{display:flex;gap:8px;}
+.eq-opt{flex:1;position:relative;}
+.eq-opt input{position:absolute;opacity:0;width:0;}
+.eq-opt label{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;text-align:center;background:var(--surface2);transition:all .13s;}
+.eq-opt label .eq-lvl{font-size:18px;font-weight:700;color:var(--text3);font-family:var(--mono);}
+.eq-opt label .eq-txt{font-size:11px;color:var(--text3);line-height:1.3;}
+.eq-opt input:checked+label{border-color:var(--primary);background:var(--primary-light);}
+.eq-opt input:checked+label .eq-lvl,.eq-opt input:checked+label .eq-txt{color:var(--primary);}
+.eq-opt label:hover{background:#f0f4ff;border-color:#a5b4fc;}
+.vas-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;}
+.vas-title{font-size:13px;font-weight:600;margin-bottom:12px;}
+.vas-display{display:flex;align-items:center;gap:16px;margin-bottom:10px;}
+.vas-number{font-size:36px;font-weight:700;color:var(--primary);font-family:var(--mono);min-width:60px;text-align:center;}
+.vas-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text4);margin-top:4px;}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:6px;background:linear-gradient(to right,#ef4444,#f59e0b,#22c55e);border-radius:99px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:white;border:2px solid var(--primary);box-shadow:var(--shadow);cursor:pointer;}
+.table-wrap{overflow-x:auto;margin-top:12px;border-radius:var(--radius);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead tr{background:var(--surface2);}
+th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2);}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.stat-val{font-size:24px;font-weight:700;color:var(--primary);font-family:var(--mono);}
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:3px;}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;}
+.badge-blue{background:var(--primary-light);color:var(--primary);}
+.badge-green{background:var(--success-light);color:var(--success);}
+.badge-red{background:var(--danger-light);color:var(--danger);}
+.badge-gray{background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
+.badge-orange{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;}
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;}
+.alert-info{background:var(--info-light);color:#164e63;border:1px solid #a5f3fc;}
+.alert-success{background:var(--success-light);color:#14532d;border:1px solid #bbf7d0;}
+.alert-warning{background:var(--warning-light);color:#78350f;border:1px solid #fde68a;}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
+.filter-bar .form-group{flex:1;min-width:120px;}
+.file-drop{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2);margin-bottom:12px;}
+.file-drop:hover,.file-drop.drag-over{border-color:var(--primary);background:var(--primary-light);}
+.file-drop-icon{font-size:32px;margin-bottom:8px;}
+.file-drop-text{font-size:13px;color:var(--text3);}
+.file-drop-text strong{color:var(--primary);}
+.share-url-row{display:flex;gap:8px;}
+.share-url-row input{flex:1;font-family:var(--mono);font-size:12px;}
+.pop-toggle{display:flex;gap:6px;margin-bottom:14px;}
+.pop-toggle-btn{padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);font-family:var(--font);font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .13s;}
+.pop-toggle-btn.active{background:var(--primary-light);border-color:var(--primary);color:var(--primary);}
+.eq-profile-display{display:flex;gap:8px;margin-bottom:12px;}
+.eq-profile-cell{flex:1;text-align:center;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);}
+.eq-profile-dim{font-size:10px;color:var(--text4);margin-bottom:4px;}
+.eq-profile-val{font-size:22px;font-weight:700;color:var(--primary);font-family:var(--mono);}
+.index-display{display:flex;gap:12px;margin-top:12px;}
+.index-box{flex:1;background:var(--primary-light);border:1px solid #bfdbfe;border-radius:var(--radius);padding:16px;text-align:center;}
+.index-box .val{font-size:36px;font-weight:700;color:var(--primary);font-family:var(--mono);}
+.index-box .lbl{font-size:11px;color:var(--text3);margin-top:4px;}
+.domain-header{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text4);padding:10px 0 6px;border-top:1px solid var(--border);margin-top:14px;}
+.domain-header:first-child{border-top:none;margin-top:0;padding-top:0;}
+.chart-container{position:relative;height:380px;margin:0 auto;}
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+.chart-wrap .chart-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:16px;text-align:center;}
+.norm-section{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:12px;}
+.norm-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.norm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.norm-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center;}
+.norm-domain{font-size:10px;color:var(--text4);margin-bottom:3px;}
+.norm-val{font-size:14px;font-weight:600;color:var(--text2);font-family:var(--mono);}
+.norm-diff{font-size:10px;margin-top:2px;}
+.norm-diff.better{color:var(--success);}
+.norm-diff.worse{color:var(--danger);}
+.norm-diff.similar{color:var(--text4);}
+.level-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.level-table th{background:var(--surface2);padding:7px 10px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);border:1px solid var(--border);}
+.level-table td{padding:7px 10px;text-align:center;border:1px solid var(--border);}
+.page-section{display:none;}
+.page-section.visible{display:block;}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text4);}
+.empty-state-icon{font-size:40px;margin-bottom:12px;}
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast-msg{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--text);color:white;border-radius:var(--radius);font-size:13px;box-shadow:var(--shadow-lg);animation:slideIn .2s ease;min-width:240px;}
+.toast-msg.success{background:var(--success);}
+.toast-msg.error{background:var(--danger);}
+.toast-msg.warning{background:var(--warning);}
+@keyframes slideIn{from{transform:translateX(40px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.score-low{color:var(--danger);font-weight:600;}
+.score-mid{color:var(--warning);font-weight:600;}
+.score-high{color:var(--success);font-weight:600;}
+.info-row-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;}
+.ref-link{font-size:11px;color:var(--primary);text-decoration:none;}
+.ref-link:hover{text-decoration:underline;}
+.ref-block{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-top:8px;font-size:11px;color:var(--text3);line-height:1.6;}
+.ref-block a{color:var(--primary);text-decoration:none;}
+.ref-block a:hover{text-decoration:underline;}
+@media(max-width:900px){.sidebar{display:none;}.stats-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.main-content{padding:14px;}.results-grid{grid-template-columns:1fr;}.eq-options{flex-wrap:wrap;}.eq-opt{min-width:45%;}}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<header class="app-header">
+  <div class="app-logo">
+    <div class="app-logo-icon">📊</div>
+    <div>
+      <div class="app-logo-text">КЖ-Калькулятор</div>
+      <div class="app-logo-sub">Оценка качества жизни</div>
+    </div>
+  </div>
+  <div class="system-tabs">
+    <button class="system-tab active" data-sys="sf36">SF-36</button>
+    <button class="system-tab" data-sys="eq5d">EQ-5D</button>
+  </div>
+</header>
+
+<div class="app-body">
+
+<!-- SF-36 SIDEBAR -->
+<nav class="sidebar" id="sf36-sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-label">Пациент</div>
+    <button class="sidebar-btn active" data-sys="sf36" data-page="sf36-patient"><span class="icon">📝</span> Опросник</button>
+  </div>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Данные</div>
+    <button class="sidebar-btn" data-sys="sf36" data-page="sf36-batch"><span class="icon">📂</span> Обработка выборки</button>
+    <button class="sidebar-btn" data-sys="sf36" data-page="sf36-share"><span class="icon">🔗</span> Отправить форму</button>
+    <button class="sidebar-btn" id="sf-db-unlock-btn" onclick="unlockDB('sf')" data-no-nav="true"><span class="icon">🔒</span> База данных</button>
+    <button class="sidebar-btn" id="sf-db-sidebar-btn" style="display:none"><span class="icon">🗄️</span> База данных</button>
+  </div>
+</nav>
+
+<!-- EQ-5D SIDEBAR -->
+<nav class="sidebar" id="eq5d-sidebar" style="display:none">
+  <div class="sidebar-section">
+    <div class="sidebar-label">Пациент</div>
+    <button class="sidebar-btn active" data-sys="eq5d" data-page="eq5d-5l"><span class="icon">📝</span> EQ-5D-5L</button>
+    <button class="sidebar-btn" data-sys="eq5d" data-page="eq5d-3l"><span class="icon">📋</span> EQ-5D-3L</button>
+  </div>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Данные</div>
+    <button class="sidebar-btn" data-sys="eq5d" data-page="eq5d-batch"><span class="icon">📂</span> Обработка выборки</button>
+    <button class="sidebar-btn" data-sys="eq5d" data-page="eq5d-share"><span class="icon">🔗</span> Отправить форму</button>
+    <button class="sidebar-btn" id="eq-db-unlock-btn" onclick="unlockDB('eq')" data-no-nav="true"><span class="icon">🔒</span> База данных</button>
+    <button class="sidebar-btn" id="eq-db-sidebar-btn" style="display:none"><span class="icon">🗄️</span> База данных</button>
+  </div>
+</nav>
+
+<main class="main-content">
+
+<!-- ═══ SF-36 QUESTIONNAIRE ═══ -->
+<div class="page-section visible" id="sf36-patient">
+  <div class="page-header">
+    <div class="page-title">Опросник SF-36</div>
+    <div class="page-subtitle">Заполните все 36 пунктов для получения результатов</div>
+  </div>
+  <div class="card">
+    <div class="card-header">👤 Данные пациента</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Дата <span class="req">*</span></label><input type="date" id="sf-date"></div>
+      <div class="form-group"><label class="form-label">Пол <span class="req">*</span></label>
+        <select id="sf-gender"><option value="">— выберите —</option><option value="male">Мужской</option><option value="female">Женский</option></select></div>
+      <div class="form-group"><label class="form-label">Возраст (лет) <span class="req">*</span></label><input type="number" id="sf-age" min="18" max="120" placeholder="45"></div>
+      <div class="form-group"><label class="form-label">Диагноз <span class="req">*</span></label><input type="text" id="sf-disease" placeholder="например, ИБС"></div>
+    </div>
+    <div style="margin-top:12px">
+      <label class="form-label">Статус заболевания</label>
+      <div class="radio-group" style="margin-top:5px">
+        <div class="radio-pill"><input type="radio" name="sf-status" id="sf-s-rem" value="remission"><label for="sf-s-rem">Ремиссия / Неактивное</label></div>
+        <div class="radio-pill"><input type="radio" name="sf-status" id="sf-s-act" value="active"><label for="sf-s-act">Рецидив / Активное</label></div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <label class="form-label">Нормативная база</label>
+      <div class="pop-toggle" style="margin-top:5px">
+        <button class="pop-toggle-btn active" data-pop="RF">🇷🇺 Рос. нормы (МИРАЖ)</button>
+        <button class="pop-toggle-btn" data-pop="US">🇺🇸 Амер. нормы</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">📝 Вопросы SF-36</div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Заполнено вопросов</span><span id="sf-prog-text">0 / 36</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="sf-prog-fill" style="width:0%"></div></div>
+    </div>
+    <div id="sf-questions-container"></div>
+    <div class="btn-group">
+      <button class="btn btn-success" id="sf-calc-btn">📊 Рассчитать результаты</button>
+      <button class="btn btn-ghost" id="sf-clear-btn">🗑️ Очистить форму</button>
+    </div>
+  </div>
+  <div id="sf-results-area" style="display:none">
+    <div class="card">
+      <div class="card-header">📈 Результаты SF-36</div>
+      <div id="sf-patient-meta" style="margin-bottom:12px"></div>
+      <div class="results-grid" id="sf-domain-results"></div>
+      <div class="summary-row" id="sf-summary-row"></div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title" id="sf-radar-title">Профиль качества жизни (паутинная диаграмма)</div>
+      <div class="chart-container" style="height:360px"><canvas id="sf-radar-chart"></canvas></div>
+    </div>
+    <div id="sf-norm-compare"></div>
+    <div id="sf-domain-level-table"></div>
+  </div>
+</div>
+
+<!-- ═══ SF-36 BATCH ═══ -->
+<div class="page-section" id="sf36-batch">
+  <div class="page-header">
+    <div class="page-title">Обработка выборки SF-36</div>
+    <div class="page-subtitle">Загрузите Excel/CSV файл для пакетного расчёта</div>
+  </div>
+  <div class="card">
+    <div class="card-header">📂 Загрузка файла</div>
+    <div class="alert alert-info">ℹ️ Файл должен содержать: <strong>ID, Date, Gender, Age, Disease, Status</strong> и ответы <strong>Q1…Q11D</strong></div>
+    <div class="file-drop" id="sf-file-drop">
+      <div class="file-drop-icon">📁</div>
+      <div class="file-drop-text">Перетащите или <strong>нажмите для выбора</strong><br><span style="font-size:11px;color:var(--text4)">.xlsx, .xls, .csv</span></div>
+      <input type="file" id="sf-file-input" accept=".xlsx,.xls,.csv" style="display:none">
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" id="sf-process-btn" disabled>🔄 Обработать</button>
+      <button class="btn btn-info" id="sf-template-btn">📥 Скачать шаблон</button>
+      <button class="btn btn-ghost" id="sf-clear-batch-btn">🗑️ Очистить</button>
+    </div>
+  </div>
+  <div id="sf-batch-preview" style="display:none">
+    <div class="card"><div class="card-header">👁️ Предпросмотр</div><div id="sf-preview-table"></div></div>
+  </div>
+  <div id="sf-batch-results" style="display:none">
+    <div class="stats-row" id="sf-batch-stats"></div>
+    <div class="chart-wrap">
+      <div class="chart-title">Профиль выборки — медиана + Q25/Q75 + норма РФ</div>
+      <div class="chart-container" style="height:360px"><canvas id="sf-batch-radar"></canvas></div>
+    </div>
+    <div id="sf-batch-norm-block"></div>
+    <div id="sf-batch-level-block"></div>
+    <div class="card">
+      <div class="card-header" style="justify-content:space-between">
+        <span>📋 Результаты расчёта</span>
+        <button class="btn btn-success btn-sm" id="sf-export-batch-btn">⬇️ Экспорт Excel</button>
+      </div>
+      <div id="sf-batch-table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SF-36 DB ═══ -->
+<div class="page-section" id="sf36-db">
+  <div class="page-header">
+    <div class="page-title">База данных SF-36</div>
+    <div class="page-subtitle">Все сохранённые результаты пациентов</div>
+  </div>
+  <div class="stats-row" id="sf-db-stats">
+    <div class="stat-box"><div class="stat-val" id="sf-db-total">0</div><div class="stat-lbl">Записей</div></div>
+    <div class="stat-box"><div class="stat-val" id="sf-db-avg-age">—</div><div class="stat-lbl">Ср. возраст</div></div>
+    <div class="stat-box"><div class="stat-val" id="sf-db-male">0</div><div class="stat-lbl">Мужчин</div></div>
+    <div class="stat-box"><div class="stat-val" id="sf-db-female">0</div><div class="stat-lbl">Женщин</div></div>
+  </div>
+  <div class="filter-bar">
+    <div class="form-group"><label class="form-label">ID или диагноз</label><input type="text" id="sf-filter-q" placeholder="поиск..."></div>
+    <div class="form-group"><label class="form-label">Пол</label>
+      <select id="sf-filter-gender"><option value="">Все</option><option value="male">Мужской</option><option value="female">Женский</option></select></div>
+    <div class="form-group"><label class="form-label">Статус</label>
+      <select id="sf-filter-status"><option value="">Все</option><option value="remission">Ремиссия / Неактивное</option><option value="active">Рецидив / Активное</option></select></div>
+    <div class="form-group"><label class="form-label">Возраст от</label><input type="number" id="sf-filter-age-min" placeholder="18"></div>
+    <div class="form-group"><label class="form-label">до</label><input type="number" id="sf-filter-age-max" placeholder="90"></div>
+    <div class="form-group"><label class="form-label">&nbsp;</label>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary" id="sf-db-filter-btn">🔍</button>
+        <button class="btn btn-ghost" id="sf-db-reset-btn">✕</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border)">
+      <button class="btn btn-info btn-sm" id="sf-db-export-btn">📤 Экспорт CSV</button>
+      <button class="btn btn-danger btn-sm" id="sf-db-clear-btn">🗑️ Очистить базу</button>
+    </div>
+    <div id="sf-db-table"></div>
+  </div>
+</div>
+
+<!-- ═══ SF-36 SHARE ═══ -->
+<div class="page-section" id="sf36-share">
+  <div class="page-header"><div class="page-title">Отправить форму SF-36</div></div>
+  <div class="card">
+    <div class="card-header">🔗 Ссылка на опросник</div>
+    <div class="alert alert-info">ℹ️ Результаты автоматически сохранятся в базу данных при заполнении пациентом</div>
+    <div class="share-url-row">
+      <input type="text" id="sf-share-url" readonly>
+      <button class="btn btn-success" id="sf-copy-url-btn">📋 Скопировать</button>
+      <button class="btn btn-ghost" id="sf-new-url-btn">🔄 Новая</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EQ-5D-5L ═══ -->
+<div class="page-section" id="eq5d-5l">
+  <div class="page-header">
+    <div class="page-title">Опросник EQ-5D-5L</div>
+    <div class="page-subtitle">Европейский инструмент оценки качества жизни — 5 уровней</div>
+  </div>
+  <div class="card">
+    <div class="card-header">👤 Данные пациента</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Дата</label><input type="date" id="eq5l-date"></div>
+      <div class="form-group"><label class="form-label">Пол</label>
+        <select id="eq5l-gender"><option value="">— выберите —</option><option value="male">Мужской</option><option value="female">Женский</option></select></div>
+      <div class="form-group"><label class="form-label">Возраст</label><input type="number" id="eq5l-age" min="1" max="120"></div>
+      <div class="form-group"><label class="form-label">Диагноз</label><input type="text" id="eq5l-disease"></div>
+    </div>
+    <div style="margin-top:12px">
+      <label class="form-label">Статус заболевания</label>
+      <div class="radio-group" style="margin-top:5px">
+        <div class="radio-pill"><input type="radio" name="eq5l-status" id="eq5l-s-rem" value="remission"><label for="eq5l-s-rem">Ремиссия / Неактивное</label></div>
+        <div class="radio-pill"><input type="radio" name="eq5l-status" id="eq5l-s-act" value="active"><label for="eq5l-s-act">Рецидив / Активное</label></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">📝 Пять измерений здоровья</div>
+    <div id="eq5d5l-dims"></div>
+    <div class="vas-block">
+      <div class="vas-title">EQ-VAS — Оценка состояния здоровья сегодня</div>
+      <div class="vas-display"><span class="vas-number" id="eq5l-vas-num">50</span><input type="range" min="0" max="100" value="50" id="eq5l-vas"></div>
+      <div class="vas-labels"><span>0 — наихудшее</span><span>100 — наилучшее</span></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" id="eq5l-calc-btn">📊 Рассчитать</button>
+      <button class="btn btn-ghost" id="eq5l-reset-btn">🗑️ Сброс</button>
+    </div>
+  </div>
+  <div id="eq5l-results" style="display:none">
+    <div class="card"><div class="card-header">📈 Результаты EQ-5D-5L</div><div id="eq5l-result-content"></div></div>
+  </div>
+</div>
+
+<!-- ═══ EQ-5D-3L ═══ -->
+<div class="page-section" id="eq5d-3l">
+  <div class="page-header">
+    <div class="page-title">Опросник EQ-5D-3L</div>
+    <div class="page-subtitle">Европейский инструмент оценки качества жизни — 3 уровня</div>
+  </div>
+  <div class="card">
+    <div class="card-header">👤 Данные пациента</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Дата</label><input type="date" id="eq3l-date"></div>
+      <div class="form-group"><label class="form-label">Пол</label>
+        <select id="eq3l-gender"><option value="">— выберите —</option><option value="male">Мужской</option><option value="female">Женский</option></select></div>
+      <div class="form-group"><label class="form-label">Возраст</label><input type="number" id="eq3l-age" min="1" max="120"></div>
+      <div class="form-group"><label class="form-label">Диагноз</label><input type="text" id="eq3l-disease"></div>
+    </div>
+    <div style="margin-top:12px">
+      <label class="form-label">Статус заболевания</label>
+      <div class="radio-group" style="margin-top:5px">
+        <div class="radio-pill"><input type="radio" name="eq3l-status" id="eq3l-s-rem" value="remission"><label for="eq3l-s-rem">Ремиссия / Неактивное</label></div>
+        <div class="radio-pill"><input type="radio" name="eq3l-status" id="eq3l-s-act" value="active"><label for="eq3l-s-act">Рецидив / Активное</label></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">📝 Пять измерений здоровья</div>
+    <div id="eq5d3l-dims"></div>
+    <div class="vas-block">
+      <div class="vas-title">EQ-VAS — Оценка состояния здоровья сегодня</div>
+      <div class="vas-display"><span class="vas-number" id="eq3l-vas-num">50</span><input type="range" min="0" max="100" value="50" id="eq3l-vas"></div>
+      <div class="vas-labels"><span>0 — наихудшее</span><span>100 — наилучшее</span></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" id="eq3l-calc-btn">📊 Рассчитать</button>
+      <button class="btn btn-ghost" id="eq3l-reset-btn">🗑️ Сброс</button>
+    </div>
+  </div>
+  <div id="eq3l-results" style="display:none">
+    <div class="card"><div class="card-header">📈 Результаты EQ-5D-3L</div><div id="eq3l-result-content"></div></div>
+  </div>
+</div>
+
+<!-- ═══ EQ-5D BATCH ═══ -->
+<div class="page-section" id="eq5d-batch">
+  <div class="page-header">
+    <div class="page-title">Обработка выборки EQ-5D</div>
+    <div class="page-subtitle">Пакетный расчёт индексов EQ-5D-5L или EQ-5D-3L</div>
+  </div>
+  <div class="card">
+    <div class="card-header">📂 Настройки и загрузка</div>
+    <div style="margin-bottom:12px">
+      <label class="form-label">Версия опросника</label>
+      <div class="pop-toggle" style="margin-top:5px">
+        <button class="pop-toggle-btn active" data-eq-batch="5L">EQ-5D-5L</button>
+        <button class="pop-toggle-btn" data-eq-batch="3L">EQ-5D-3L</button>
+      </div>
+    </div>
+    <div class="alert alert-info">ℹ️ Файл должен содержать: <strong>ID, Date, Gender, Age, Disease, Status, MO, SC, UA, PD, AD, VAS</strong></div>
+    <div class="file-drop" id="eq-file-drop">
+      <div class="file-drop-icon">📁</div>
+      <div class="file-drop-text">Перетащите или <strong>нажмите для выбора</strong></div>
+      <input type="file" id="eq-file-input" accept=".xlsx,.xls,.csv" style="display:none">
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" id="eq-process-btn" disabled>🔄 Обработать</button>
+      <button class="btn btn-info" id="eq-template-btn">📥 Скачать шаблон</button>
+      <button class="btn btn-ghost" id="eq-clear-batch-btn">🗑️ Очистить</button>
+    </div>
+  </div>
+  <div id="eq-batch-preview" style="display:none">
+    <div class="card"><div class="card-header">👁️ Предпросмотр</div><div id="eq-preview-table"></div></div>
+  </div>
+  <div id="eq-batch-results" style="display:none">
+    <div class="stats-row" id="eq-batch-stats"></div>
+    <div id="eq-batch-level-block"></div>
+    <div class="card">
+      <div class="card-header" style="justify-content:space-between">
+        <span>📋 Результаты расчёта</span>
+        <button class="btn btn-success btn-sm" id="eq-export-batch-btn">⬇️ Экспорт Excel</button>
+      </div>
+      <div id="eq-batch-table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EQ-5D DB ═══ -->
+<div class="page-section" id="eq5d-db">
+  <div class="page-header">
+    <div class="page-title">База данных EQ-5D</div>
+    <div class="page-subtitle">Все сохранённые результаты пациентов</div>
+  </div>
+  <div class="stats-row" id="eq-db-stats">
+    <div class="stat-box"><div class="stat-val" id="eq-db-total">0</div><div class="stat-lbl">Записей</div></div>
+    <div class="stat-box"><div class="stat-val" id="eq-db-avg-idx">—</div><div class="stat-lbl">Ср. индекс</div></div>
+    <div class="stat-box"><div class="stat-val" id="eq-db-avg-vas">—</div><div class="stat-lbl">Ср. VAS</div></div>
+    <div class="stat-box"><div class="stat-val" id="eq-db-5l-count">0</div><div class="stat-lbl">EQ-5D-5L</div></div>
+  </div>
+  <div class="filter-bar">
+    <div class="form-group"><label class="form-label">Диагноз или ID</label><input type="text" id="eq-filter-q" placeholder="поиск..."></div>
+    <div class="form-group"><label class="form-label">Тип</label>
+      <select id="eq-filter-type"><option value="">Все</option><option value="5L">EQ-5D-5L</option><option value="3L">EQ-5D-3L</option></select></div>
+    <div class="form-group"><label class="form-label">Статус</label>
+      <select id="eq-filter-status"><option value="">Все</option><option value="remission">Ремиссия</option><option value="active">Активное</option></select></div>
+    <div class="form-group"><label class="form-label">Пол</label>
+      <select id="eq-filter-gender"><option value="">Все</option><option value="male">Мужской</option><option value="female">Женский</option></select></div>
+    <div class="form-group"><label class="form-label">&nbsp;</label>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary" id="eq-db-filter-btn">🔍</button>
+        <button class="btn btn-ghost" id="eq-db-reset-btn">✕</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border)">
+      <button class="btn btn-info btn-sm" id="eq-db-export-btn">📤 Экспорт CSV</button>
+      <button class="btn btn-danger btn-sm" id="eq-db-clear-btn">🗑️ Очистить базу</button>
+    </div>
+    <div id="eq-db-table"></div>
+  </div>
+</div>
+
+<!-- ═══ EQ-5D SHARE ═══ -->
+<div class="page-section" id="eq5d-share">
+  <div class="page-header"><div class="page-title">Отправить форму EQ-5D</div></div>
+  <div class="card">
+    <div class="card-header">🔗 Ссылка на опросник</div>
+    <div style="margin-bottom:12px">
+      <label class="form-label">Версия опросника</label>
+      <select id="eq-share-type" style="max-width:200px;margin-top:5px"><option value="5L">EQ-5D-5L</option><option value="3L">EQ-5D-3L</option></select>
+    </div>
+    <div class="share-url-row">
+      <input type="text" id="eq-share-url" readonly>
+      <button class="btn btn-success" id="eq-copy-url-btn">📋 Скопировать</button>
+      <button class="btn btn-ghost" id="eq-new-url-btn">🔄 Новая</button>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+/* ═══════════════ DATA DEFINITIONS ═══════════════ */
+
+const SF36_Q = [
+  {id:'Q1',domain:'Общее здоровье (GH)',
+   text:'1. Как бы Вы в целом оценили состояние Вашего здоровья?',
+   opts:[{v:1,t:'Отличное'},{v:2,t:'Очень хорошее'},{v:3,t:'Хорошее'},{v:4,t:'Посредственное'},{v:5,t:'Плохое'}]},
+  {id:'Q2',domain:'Изменение здоровья',
+   text:'2. Как бы Вы в целом оценили своё здоровье сейчас по сравнению с тем, что было год назад?',
+   opts:[{v:1,t:'Значительно лучше, чем год назад'},{v:2,t:'Несколько лучше, чем год назад'},{v:3,t:'Примерно так же, как год назад'},{v:4,t:'Несколько хуже, чем год назад'},{v:5,t:'Гораздо хуже, чем год назад'}]},
+  {id:'Q3A',domain:'Физическое функционирование (PF)',
+   text:'3. Следующие вопросы касаются физических нагрузок, с которыми Вы, возможно, сталкиваетесь в течение своего обычного дня. Ограничивает ли Вас состояние Вашего здоровья в настоящее время в выполнении перечисленных ниже физических нагрузок? Если да, то в какой степени?\n\nА. Тяжёлые физические нагрузки, такие как бег, поднятие тяжестей, занятие силовыми видами спорта',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q3B',domain:'Физическое функционирование (PF)',
+   text:'Б. Умеренные физические нагрузки, такие как передвинуть стол, поработать с пылесосом, собирать грибы или ягоды',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q3C',domain:'Физическое функционирование (PF)',
+   text:'В. Поднять или нести сумку с продуктами',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q3D',domain:'Физическое функционирование (PF)',
+   text:'Г. Подняться пешком по лестнице на несколько пролётов',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q3E',domain:'Физическое функционирование (PF)',
+   text:'Д. Подняться пешком по лестнице на один пролёт',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q3F',domain:'Физическое функционирование (PF)',
+   text:'Е. Наклониться, встать на колени, присесть на корточки',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q3G',domain:'Физическое функционирование (PF)',
+   text:'Ж. Пройти расстояние более одного километра',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q3H',domain:'Физическое функционирование (PF)',
+   text:'З. Пройти расстояние в несколько кварталов',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q3I',domain:'Физическое функционирование (PF)',
+   text:'И. Пройти расстояние в один квартал',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q3J',domain:'Физическое функционирование (PF)',
+   text:'К. Самостоятельно вымыться, одеться',
+   opts:[{v:1,t:'Да, значительно ограничивает'},{v:2,t:'Да, немного ограничивает'},{v:3,t:'Нет, совсем не ограничивает'}]},
+  {id:'Q4A',domain:'Ролевое физическое (RP)',
+   text:'4. Бывало ли за последние 4 недели так, что Ваше физическое состояние вызывало затруднения в Вашей работе или другой обычной повседневной деятельности, вследствие чего:\n\nА. Пришлось сократить количество времени, затрачиваемого на работу или другие дела',
+   opts:[{v:1,t:'Да'},{v:2,t:'Нет'}]},
+  {id:'Q4B',domain:'Ролевое физическое (RP)',
+   text:'Б. Выполнили меньше, чем хотели',
+   opts:[{v:1,t:'Да'},{v:2,t:'Нет'}]},
+  {id:'Q4C',domain:'Ролевое физическое (RP)',
+   text:'В. Вы были ограничены в выполнении какого-либо определённого вида работ или другой деятельности',
+   opts:[{v:1,t:'Да'},{v:2,t:'Нет'}]},
+  {id:'Q4D',domain:'Ролевое физическое (RP)',
+   text:'Г. Были трудности при выполнении своей работы или других дел (например, они потребовали дополнительных усилий)',
+   opts:[{v:1,t:'Да'},{v:2,t:'Нет'}]},
+  {id:'Q5A',domain:'Ролевое эмоциональное (RE)',
+   text:'5. Бывало ли за последние 4 недели, что Ваше эмоциональное состояние вызывало затруднения в Вашей работе или другой обычной повседневной деятельности, вследствие чего:\n\nА. Пришлось сократить количество времени, затрачиваемого на работу или другие дела',
+   opts:[{v:1,t:'Да'},{v:2,t:'Нет'}]},
+  {id:'Q5B',domain:'Ролевое эмоциональное (RE)',
+   text:'Б. Выполнили меньше, чем хотели',
+   opts:[{v:1,t:'Да'},{v:2,t:'Нет'}]},
+  {id:'Q5C',domain:'Ролевое эмоциональное (RE)',
+   text:'В. Выполняли свою работу или другие дела не так аккуратно, как обычно',
+   opts:[{v:1,t:'Да'},{v:2,t:'Нет'}]},
+  {id:'Q6',domain:'Социальное функционирование (SF)',
+   text:'6. Насколько Ваше физическое и эмоциональное состояние в течение последних 4 недель мешало Вам проводить время с семьёй, друзьями, соседями или в коллективе?',
+   opts:[{v:1,t:'Совсем не мешало'},{v:2,t:'Немного'},{v:3,t:'Умеренно'},{v:4,t:'Сильно'},{v:5,t:'Очень сильно'}]},
+  {id:'Q7',domain:'Интенсивность боли (BP)',
+   text:'7. Насколько сильную физическую боль Вы испытывали за последние 4 недели?',
+   opts:[{v:1,t:'Совсем не испытывал(а)'},{v:2,t:'Очень слабую'},{v:3,t:'Слабую'},{v:4,t:'Умеренную'},{v:5,t:'Сильную'},{v:6,t:'Очень сильную'}]},
+  {id:'Q8',domain:'Интенсивность боли (BP)',
+   text:'8. В какой степени боль в течение последних 4 недель мешала Вам заниматься Вашей нормальной работой (включая работу вне дома или по дому)?',
+   opts:[{v:1,t:'Совсем не мешала'},{v:2,t:'Немного'},{v:3,t:'Умеренно'},{v:4,t:'Сильно'},{v:5,t:'Очень сильно'}]},
+  {id:'Q9A',domain:'Жизненная активность (VT)',
+   text:'9. Следующие вопросы касаются того, как Вы себя чувствовали и каким было Ваше настроение в течение последних 4 недель. Пожалуйста, на каждый вопрос дайте один ответ, который наиболее соответствует Вашим ощущениям.\n\nА. Вы чувствовали себя бодрым(ой)?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Часто'},{v:4,t:'Иногда'},{v:5,t:'Редко'},{v:6,t:'Ни разу'}]},
+  {id:'Q9B',domain:'Психическое здоровье (MH)',
+   text:'Б. Вы сильно нервничали?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Часто'},{v:4,t:'Иногда'},{v:5,t:'Редко'},{v:6,t:'Ни разу'}]},
+  {id:'Q9C',domain:'Психическое здоровье (MH)',
+   text:'В. Вы чувствовали себя таким(ой) подавленным(ой), что ничто не могло Вас взбодрить?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Часто'},{v:4,t:'Иногда'},{v:5,t:'Редко'},{v:6,t:'Ни разу'}]},
+  {id:'Q9D',domain:'Жизненная активность (VT)',
+   text:'Г. Вы чувствовали себя спокойным(ой) и умиротворённым(ой)?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Часто'},{v:4,t:'Иногда'},{v:5,t:'Редко'},{v:6,t:'Ни разу'}]},
+  {id:'Q9E',domain:'Жизненная активность (VT)',
+   text:'Д. Вы чувствовали себя полным(ой) сил и энергии?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Часто'},{v:4,t:'Иногда'},{v:5,t:'Редко'},{v:6,t:'Ни разу'}]},
+  {id:'Q9F',domain:'Психическое здоровье (MH)',
+   text:'Е. Вы чувствовали себя упавшим(ей) духом и печальным(ой)?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Часто'},{v:4,t:'Иногда'},{v:5,t:'Редко'},{v:6,t:'Ни разу'}]},
+  {id:'Q9G',domain:'Жизненная активность (VT)',
+   text:'Ж. Вы чувствовали себя измученным(ой)?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Часто'},{v:4,t:'Иногда'},{v:5,t:'Редко'},{v:6,t:'Ни разу'}]},
+  {id:'Q9H',domain:'Психическое здоровье (MH)',
+   text:'З. Вы чувствовали себя счастливым(ой)?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Часто'},{v:4,t:'Иногда'},{v:5,t:'Редко'},{v:6,t:'Ни разу'}]},
+  {id:'Q9I',domain:'Жизненная активность (VT)',
+   text:'И. Вы чувствовали себя уставшим(ей)?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Часто'},{v:4,t:'Иногда'},{v:5,t:'Редко'},{v:6,t:'Ни разу'}]},
+  {id:'Q10',domain:'Социальное функционирование (SF)',
+   text:'10. Как часто за последние 4 недели Ваше физическое или эмоциональное состояние мешало Вам активно общаться с людьми (навещать друзей, родственников и т. п.)?',
+   opts:[{v:1,t:'Всё время'},{v:2,t:'Большую часть времени'},{v:3,t:'Иногда'},{v:4,t:'Редко'},{v:5,t:'Ни разу'}]},
+  {id:'Q11A',domain:'Общее здоровье (GH)',
+   text:'11. Насколько ВЕРНЫМ или НЕВЕРНЫМ представляется по отношению к Вам каждое из нижеперечисленных утверждений?\n\nА. Мне кажется, что я более склонен(а) к болезням, чем другие',
+   opts:[{v:1,t:'Определённо верно'},{v:2,t:'В основном верно'},{v:3,t:'Не знаю'},{v:4,t:'В основном неверно'},{v:5,t:'Определённо неверно'}]},
+  {id:'Q11B',domain:'Общее здоровье (GH)',
+   text:'Б. Моё здоровье не хуже, чем у большинства моих знакомых',
+   opts:[{v:1,t:'Определённо верно'},{v:2,t:'В основном верно'},{v:3,t:'Не знаю'},{v:4,t:'В основном неверно'},{v:5,t:'Определённо неверно'}]},
+  {id:'Q11C',domain:'Общее здоровье (GH)',
+   text:'В. Я ожидаю, что моё здоровье ухудшится',
+   opts:[{v:1,t:'Определённо верно'},{v:2,t:'В основном верно'},{v:3,t:'Не знаю'},{v:4,t:'В основном неверно'},{v:5,t:'Определённо неверно'}]},
+  {id:'Q11D',domain:'Общее здоровье (GH)',
+   text:'Г. У меня отличное здоровье',
+   opts:[{v:1,t:'Определённо верно'},{v:2,t:'В основном верно'},{v:3,t:'Не знаю'},{v:4,t:'В основном неверно'},{v:5,t:'Определённо неверно'}]}
+];
+
+const SF36_SCORE_MAP = {
+  Q1:v=>[100,75,50,25,0][v-1], Q2:v=>[100,75,50,25,0][v-1],
+  Q3A:v=>[0,50,100][v-1], Q3B:v=>[0,50,100][v-1], Q3C:v=>[0,50,100][v-1],
+  Q3D:v=>[0,50,100][v-1], Q3E:v=>[0,50,100][v-1], Q3F:v=>[0,50,100][v-1],
+  Q3G:v=>[0,50,100][v-1], Q3H:v=>[0,50,100][v-1], Q3I:v=>[0,50,100][v-1],
+  Q3J:v=>[0,50,100][v-1],
+  Q4A:v=>[0,100][v-1], Q4B:v=>[0,100][v-1], Q4C:v=>[0,100][v-1], Q4D:v=>[0,100][v-1],
+  Q5A:v=>[0,100][v-1], Q5B:v=>[0,100][v-1], Q5C:v=>[0,100][v-1],
+  Q6:v=>[100,75,50,25,0][v-1],
+  Q7:v=>[100,80,60,40,20,0][v-1],
+  Q8:v=>[100,75,50,25,0][v-1],
+  Q9A:v=>[100,80,60,40,20,0][v-1], Q9B:v=>[0,20,40,60,80,100][v-1],
+  Q9C:v=>[0,20,40,60,80,100][v-1], Q9D:v=>[100,80,60,40,20,0][v-1],
+  Q9E:v=>[100,80,60,40,20,0][v-1], Q9F:v=>[0,20,40,60,80,100][v-1],
+  Q9G:v=>[0,20,40,60,80,100][v-1], Q9H:v=>[100,80,60,40,20,0][v-1],
+  Q9I:v=>[0,20,40,60,80,100][v-1],
+  Q10:v=>[0,25,50,75,100][v-1],
+  Q11A:v=>[0,25,50,75,100][v-1], Q11B:v=>[100,75,50,25,0][v-1],
+  Q11C:v=>[0,25,50,75,100][v-1], Q11D:v=>[100,75,50,25,0][v-1]
+};
+
+const DOMAIN_ITEMS = {
+  PF:['Q3A','Q3B','Q3C','Q3D','Q3E','Q3F','Q3G','Q3H','Q3I','Q3J'],
+  RP:['Q4A','Q4B','Q4C','Q4D'], BP:['Q7','Q8'],
+  GH:['Q1','Q11A','Q11B','Q11C','Q11D'],
+  VT:['Q9A','Q9E','Q9D','Q9G','Q9I'],
+  SF:['Q6','Q10'], RE:['Q5A','Q5B','Q5C'],
+  MH:['Q9B','Q9C','Q9F','Q9H']
+};
+
+const DOMAIN_NAMES = {
+  PF:'Физическое функционирование', RP:'Ролевое физическое',
+  BP:'Интенсивность боли', GH:'Общее здоровье',
+  VT:'Жизненная активность', SF:'Социальное функционирование',
+  RE:'Ролевое эмоциональное', MH:'Психическое здоровье'
+};
+
+const DOM_ORDER = ['PF','RP','BP','GH','VT','SF','RE','MH'];
+
+const PCS_W = {PF:0.424,RP:0.351,BP:0.318,GH:0.250,VT:0.029,SF:0.008,RE:-0.192,MH:-0.221};
+const MCS_W = {PF:-0.230,RP:-0.123,BP:-0.097,GH:-0.015,VT:0.235,SF:0.269,RE:0.434,MH:0.486};
+const AGG_MEANS = {PF:84.2,RP:80.9,BP:75.2,GH:72.0,VT:60.9,SF:83.3,RE:81.3,MH:74.7};
+const AGG_SDS   = {PF:23.3,RP:34.0,BP:23.7,GH:20.3,VT:20.9,SF:22.7,RE:33.0,MH:18.1};
+
+// Russian MIRAZH population norms (T-scores: mean=50 SD=10)
+// Source: Amirzhdanova V.N. et al. Nauchno-prakticheskaya revmatologiya. 2008;1:36-48. n=3344
+const RF_NORMS = {
+  // Amirjanova VN et al. NPR. 2008;1:36-48. n=3344. T-scores (mean=50, SD=10). Exact values from Appendix 1.
+  all:{
+    '_all':  {PF:{m:50.00,p25:45.23,p50:55.15,p75:57.13},RP:{m:50.00,p25:37.30,p50:49.10,p75:60.90},BP:{m:50.00,p25:42.27,p50:49.89,p75:60.92},GH:{m:50.00,p25:44.03,p50:49.19,p75:57.97},VT:{m:50.00,p25:43.10,p50:52.20,p75:59.03},SF:{m:50.00,p25:41.60,p50:52.27,p75:57.61},RE:{m:50.00,p25:36.36,p50:52.25,p75:60.19},MH:{m:50.00,p25:43.58,p50:50.59,p75:58.60}},
+    '18-24': {PF:{m:55.04,p25:55.15,p50:57.13,p75:59.12},RP:{m:53.58,p25:49.10,p50:55.00,p75:60.90},BP:{m:54.30,p25:46.08,p50:57.12,p75:62.45},GH:{m:54.82,p25:47.64,p50:55.40,p75:62.11},VT:{m:52.42,p25:47.65,p50:54.48,p75:59.03},SF:{m:52.50,p25:46.94,p50:52.27,p75:62.94},RE:{m:51.71,p25:44.30,p50:52.25,p75:60.19},MH:{m:51.93,p25:46.58,p50:52.59,p75:58.60}},
+    '25-34': {PF:{m:54.92,p25:53.16,p50:57.13,p75:59.12},RP:{m:54.16,p25:49.10,p50:60.90,p75:60.90},BP:{m:53.98,p25:46.08,p50:57.12,p75:60.93},GH:{m:54.24,p25:47.64,p50:55.40,p75:62.11},VT:{m:53.36,p25:47.65,p50:56.75,p75:61.31},SF:{m:53.23,p25:46.94,p50:52.27,p75:62.04},RE:{m:52.45,p25:44.30,p50:52.25,p75:60.19},MH:{m:52.59,p25:46.58,p50:54.60,p75:60.61}},
+    '35-44': {PF:{m:51.89,p25:49.20,p50:55.15,p75:57.13},RP:{m:51.47,p25:43.20,p50:55.00,p75:60.90},BP:{m:51.07,p25:42.27,p50:50.27,p75:60.93},GH:{m:50.70,p25:44.03,p50:50.23,p75:57.98},VT:{m:50.91,p25:43.10,p50:52.20,p75:59.03},SF:{m:50.63,p25:41.60,p50:52.27,p75:57.61},RE:{m:51.16,p25:44.30,p50:52.25,p75:60.19},MH:{m:50.51,p25:44.58,p50:50.59,p75:58.60}},
+    '45-54': {PF:{m:48.19,p25:43.25,p50:51.18,p75:55.15},RP:{m:47.94,p25:37.30,p50:43.20,p75:60.90},BP:{m:47.51,p25:42.27,p50:46.08,p75:54.83},GH:{m:47.66,p25:41.44,p50:46.61,p75:54.36},VT:{m:48.01,p25:40.82,p50:47.65,p75:56.75},SF:{m:47.87,p25:41.60,p50:46.94,p75:57.61},RE:{m:49.05,p25:36.36,p50:52.25,p75:60.19},MH:{m:48.58,p25:42.58,p50:48.59,p75:56.60}},
+    '55-64': {PF:{m:44.55,p25:37.30,p50:47.21,p75:53.17},RP:{m:45.25,p25:37.30,p50:37.30,p75:55.00},BP:{m:45.84,p25:38.47,p50:46.08,p75:51.03},GH:{m:45.09,p25:38.86,p50:44.03,p75:49.19},VT:{m:47.48,p25:40.82,p50:47.65,p75:54.48},SF:{m:47.73,p25:41.60,p50:46.94,p75:57.61},RE:{m:47.37,p25:36.36,p50:44.30,p75:60.19},MH:{m:47.83,p25:40.58,p50:48.59,p75:54.60}},
+    '65-74': {PF:{m:40.43,p25:33.33,p50:41.27,p75:49.20},RP:{m:44.30,p25:37.30,p50:37.30,p75:49.10},BP:{m:44.70,p25:38.47,p50:42.27,p75:50.27},GH:{m:44.42,p25:38.86,p50:44.03,p75:49.19},VT:{m:45.70,p25:38.55,p50:45.38,p75:52.20},SF:{m:46.53,p25:41.60,p50:46.94,p75:52.27},RE:{m:45.80,p25:36.36,p50:44.30,p75:60.19},MH:{m:46.50,p25:40.58,p50:46.58,p75:52.60}},
+    '75+':   {PF:{m:33.28,p25:23.42,p50:31.35,p75:43.25},RP:{m:40.75,p25:37.30,p50:37.30,p75:37.30},BP:{m:41.55,p25:35.04,p50:42.30,p75:46.08},GH:{m:42.67,p25:38.86,p50:41.44,p75:46.61},VT:{m:42.81,p25:34.00,p50:43.10,p75:49.93},SF:{m:43.81,p25:36.27,p50:41.60,p75:52.27},RE:{m:43.17,p25:36.36,p50:36.36,p75:52.25},MH:{m:46.67,p25:38.57,p50:45.58,p75:54.60}}
+  },
+  male:{
+    '_all':  {PF:{m:51.75,p25:49.20,p50:57.13,p75:59.12},RP:{m:51.56,p25:43.20,p50:55.00,p75:60.90},BP:{m:51.64,p25:42.27,p50:53.69,p75:60.93},GH:{m:51.47,p25:44.03,p50:51.78,p75:59.53},VT:{m:52.28,p25:45.38,p50:54.47,p75:59.03},SF:{m:51.70,p25:46.94,p50:52.27,p75:57.61},RE:{m:51.31,p25:44.30,p50:52.25,p75:60.19},MH:{m:52.76,p25:48.59,p50:54.60,p75:58.60}},
+    '18-24': {PF:{m:55.16,p25:55.15,p50:57.13,p75:59.12},RP:{m:53.87,p25:43.20,p50:60.90,p75:60.90},BP:{m:55.64,p25:50.27,p50:60.93,p75:62.45},GH:{m:55.74,p25:47.64,p50:56.95,p75:63.15},VT:{m:54.00,p25:47.65,p50:54.47,p75:61.31},SF:{m:54.85,p25:52.27,p50:57.61,p75:62.94},RE:{m:53.77,p25:52.24,p50:60.19,p75:60.19},MH:{m:54.07,p25:48.59,p50:54.60,p75:60.61}},
+    '25-34': {PF:{m:55.39,p25:55.15,p50:57.13,p75:59.12},RP:{m:55.82,p25:55.00,p50:60.90,p75:60.90},BP:{m:55.75,p25:50.27,p50:60.93,p75:62.45},GH:{m:55.43,p25:50.23,p50:56.95,p75:63.15},VT:{m:54.68,p25:47.65,p50:56.75,p75:61.31},SF:{m:54.14,p25:46.94,p50:57.61,p75:62.94},RE:{m:53.74,p25:44.30,p50:60.19,p75:60.19},MH:{m:54.27,p25:48.58,p50:54.60,p75:60.61}},
+    '35-44': {PF:{m:53.26,p25:52.17,p50:57.13,p75:59.12},RP:{m:53.07,p25:43.20,p50:55.00,p75:60.90},BP:{m:53.42,p25:46.08,p50:54.83,p75:60.92},GH:{m:51.12,p25:44.03,p50:50.23,p75:57.97},VT:{m:53.49,p25:47.65,p50:54.48,p75:61.31},SF:{m:52.13,p25:46.94,p50:52.27,p75:57.61},RE:{m:52.51,p25:44.30,p50:52.25,p75:60.19},MH:{m:53.04,p25:48.59,p50:54.60,p75:58.60}},
+    '45-54': {PF:{m:50.65,p25:46.22,p50:55.15,p75:57.13},RP:{m:49.26,p25:37.30,p50:49.10,p75:60.90},BP:{m:48.34,p25:42.27,p50:46.08,p75:58.64},GH:{m:49.13,p25:41.44,p50:49.19,p75:56.95},VT:{m:50.33,p25:43.10,p50:49.93,p75:59.03},SF:{m:49.35,p25:41.60,p50:52.27,p75:57.61},RE:{m:49.42,p25:36.36,p50:52.25,p75:60.19},MH:{m:51.78,p25:45.58,p50:52.59,p75:58.60}},
+    '55-64': {PF:{m:46.87,p25:37.30,p50:49.20,p75:57.13},RP:{m:46.36,p25:37.30,p50:43.20,p75:60.90},BP:{m:46.27,p25:38.47,p50:46.08,p75:54.83},GH:{m:46.59,p25:38.86,p50:46.61,p75:52.81},VT:{m:49.41,p25:43.10,p50:49.93,p75:56.75},SF:{m:48.66,p25:41.60,p50:46.94,p75:57.61},RE:{m:48.31,p25:36.36,p50:44.30,p75:60.19},MH:{m:51.02,p25:44.58,p50:50.60,p75:56.60}},
+    '65-74': {PF:{m:44.48,p25:35.32,p50:45.23,p75:55.15},RP:{m:46.54,p25:37.30,p50:43.20,p75:60.90},BP:{m:46.50,p25:42.27,p50:46.08,p75:50.27},GH:{m:47.17,p25:44.03,p50:46.61,p75:50.23},VT:{m:49.58,p25:43.10,p50:49.93,p75:59.03},SF:{m:48.95,p25:41.60,p50:46.94,p75:57.61},RE:{m:47.30,p25:36.36,p50:44.30,p75:60.20},MH:{m:51.01,p25:44.58,p50:50.60,p75:58.60}},
+    '75+':   {PF:{m:36.01,p25:23.42,p50:31.35,p75:51.18},RP:{m:43.46,p25:37.30,p50:37.30,p75:55.00},BP:{m:41.36,p25:35.04,p50:38.85,p75:46.08},GH:{m:44.97,p25:38.86,p50:44.03,p75:50.23},VT:{m:46.76,p25:38.55,p50:47.65,p75:56.75},SF:{m:46.94,p25:41.60,p50:52.27,p75:57.61},RE:{m:43.96,p25:36.36,p50:36.36,p75:52.25},MH:{m:49.55,p25:42.58,p50:50.60,p75:56.60}}
+  },
+  female:{
+    '_all':  {PF:{m:49.32,p25:19.25,p50:53.17,p75:57.13},RP:{m:49.39,p25:37.30,p50:49.10,p75:60.90},BP:{m:49.36,p25:26.67,p50:47.22,p75:58.64},GH:{m:49.42,p25:20.77,p50:49.19,p75:55.40},VT:{m:49.11,p25:24.89,p50:49.93,p75:56.75},SF:{m:49.34,p25:20.26,p50:52.27,p75:57.61},RE:{m:49.49,p25:36.36,p50:52.25,p75:60.19},MH:{m:48.92,p25:20.55,p50:48.59,p75:56.60}},
+    '18-24': {PF:{m:54.99,p25:55.15,p50:57.13,p75:59.12},RP:{m:53.44,p25:49.10,p50:55.00,p75:60.90},BP:{m:53.67,p25:46.08,p50:54.83,p75:60.93},GH:{m:54.40,p25:47.64,p50:55.40,p75:60.56},VT:{m:51.69,p25:45.38,p50:52.20,p75:59.03},SF:{m:51.40,p25:46.94,p50:52.27,p75:57.61},RE:{m:50.74,p25:44.30,p50:52.24,p75:60.19},MH:{m:50.93,p25:44.58,p50:50.59,p75:58.60}},
+    '25-34': {PF:{m:54.71,p25:53.17,p50:57.13,p75:59.12},RP:{m:53.42,p25:49.10,p50:55.00,p75:60.90},BP:{m:53.18,p25:46.08,p50:54.83,p75:60.93},GH:{m:53.71,p25:46.61,p50:54.36,p75:60.56},VT:{m:52.76,p25:47.65,p50:54.48,p75:59.03},SF:{m:52.82,p25:46.94,p50:52.27,p75:62.94},RE:{m:51.87,p25:44.30,p50:52.25,p75:60.19},MH:{m:51.84,p25:44.58,p50:52.59,p75:58.60}},
+    '35-44': {PF:{m:51.38,p25:49.20,p50:55.15,p75:57.13},RP:{m:50.88,p25:37.30,p50:55.00,p75:60.90},BP:{m:50.19,p25:42.27,p50:50.27,p75:60.93},GH:{m:50.55,p25:44.03,p50:49.19,p75:57.97},VT:{m:49.95,p25:43.10,p50:52.20,p75:59.03},SF:{m:50.07,p25:41.60,p50:52.27,p75:57.61},RE:{m:50.65,p25:44.30,p50:52.25,p75:60.19},MH:{m:49.56,p25:42.58,p50:50.59,p75:56.60}},
+    '45-54': {PF:{m:47.41,p25:41.27,p50:51.18,p75:55.15},RP:{m:47.52,p25:37.30,p50:43.20,p75:60.90},BP:{m:47.25,p25:42.27,p50:46.08,p75:54.83},GH:{m:47.20,p25:41.44,p50:46.61,p75:52.81},VT:{m:47.28,p25:40.82,p50:47.65,p75:56.75},SF:{m:47.40,p25:41.60,p50:46.94,p75:52.27},RE:{m:48.94,p25:36.36,p50:52.25,p75:60.19},MH:{m:47.56,p25:40.58,p50:48.59,p75:56.60}},
+    '55-64': {PF:{m:43.59,p25:37.30,p50:45.23,p75:53.17},RP:{m:44.80,p25:37.30,p50:37.30,p75:55.00},BP:{m:45.67,p25:38.85,p50:45.89,p75:50.27},GH:{m:44.48,p25:38.86,p50:44.03,p75:49.19},VT:{m:46.70,p25:38.55,p50:47.65,p75:54.48},SF:{m:47.35,p25:41.60,p50:46.94,p75:52.27},RE:{m:46.99,p25:36.36,p50:44.30,p75:60.19},MH:{m:46.52,p25:40.58,p50:46.58,p75:52.59}},
+    '65-74': {PF:{m:39.14,p25:31.35,p50:39.28,p75:49.20},RP:{m:43.59,p25:37.30,p50:37.30,p75:49.10},BP:{m:44.12,p25:38.47,p50:42.27,p75:50.27},GH:{m:43.53,p25:38.86,p50:44.03,p75:47.64},VT:{m:44.46,p25:38.55,p50:45.38,p75:52.20},SF:{m:45.75,p25:41.60,p50:46.94,p75:52.27},RE:{m:45.31,p25:36.36,p50:44.30,p75:52.25},MH:{m:45.06,p25:38.57,p50:46.58,p75:52.59}},
+    '75+':   {PF:{m:31.94,p25:23.41,p50:31.94,p75:37.30},RP:{m:39.43,p25:37.30,p50:39.43,p75:46.08},BP:{m:41.65,p25:38.47,p50:41.65,p75:46.61},GH:{m:41.54,p25:36.27,p50:41.54,p75:46.61},VT:{m:40.87,p25:34.00,p50:40.87,p75:47.65},SF:{m:42.29,p25:36.27,p50:42.29,p75:52.27},RE:{m:42.78,p25:36.36,p50:42.78,p75:52.25},MH:{m:45.26,p25:36.57,p50:45.26,p75:52.59}}
+  }
+}
+
+function getAgeGroup(age) {
+  if (age < 25) return '18-24';
+  if (age < 35) return '25-34';
+  if (age < 45) return '35-44';
+  if (age < 55) return '45-54';
+  if (age < 65) return '55-64';
+  if (age < 75) return '65-74';
+  return '75+';
+}
+
+function getRFNorm(age, gender) {
+  const grp = getAgeGroup(age);
+  const g = gender === 'male' ? 'male' : gender === 'female' ? 'female' : 'all';
+  return RF_NORMS[g][grp] || RF_NORMS.all['_all'];
+}
+
+function calcSF36Scores(answers) {
+  const pre = {};
+  for (const [id, fn] of Object.entries(SF36_SCORE_MAP)) {
+    if (answers[id] != null) pre[id] = fn(answers[id]);
+  }
+  const scores = {};
+  for (const [dom, items] of Object.entries(DOMAIN_ITEMS)) {
+    const vals = items.map(i => pre[i]).filter(v => v != null);
+    scores[dom] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+  }
+  return scores;
+}
+
+function calcPCS_MCS(scores) {
+  const tScores = {};
+  for (const dom of Object.keys(DOMAIN_ITEMS)) {
+    if (scores[dom] != null) tScores[dom] = ((scores[dom] - AGG_MEANS[dom]) / AGG_SDS[dom]) * 10 + 50;
+  }
+  let pcs = 0, mcs = 0;
+  for (const dom of Object.keys(PCS_W)) {
+    pcs += (tScores[dom] ?? 0) * PCS_W[dom];
+    mcs += (tScores[dom] ?? 0) * MCS_W[dom];
+  }
+  return { PCS: Math.max(0, Math.min(100, pcs)), MCS: Math.max(0, Math.min(100, mcs)) };
+}
+
+/* EQ-5D */
+const EQ_DIMS = [
+  {code:'MO',name:'Подвижность',
+   desc5L:'Укажите такой ответ, который наилучшим образом отражает состояние Вашего здоровья СЕГОДНЯ.',
+   desc3L:'Отметьте галочкой ОДИН квадрат. Укажите такие ответы, которые наилучшим образом отражают состояние Вашего здоровья на СЕГОДНЯШНИЙ ДЕНЬ.'},
+  {code:'SC',name:'Уход за собой',desc5L:'',desc3L:''},
+  {code:'UA',name:'Привычная повседневная деятельность',
+   desc5L:'(например: работа, учёба, работа по дому, участие в делах семьи, досуг)',
+   desc3L:'(например: работа, учёба, работа по дому, участие в делах семьи, досуг)'},
+  {code:'PD',name:'Боль / Дискомфорт',desc5L:'',desc3L:''},
+  {code:'AD',name:'Тревога / Депрессия',desc5L:'',desc3L:''}
+];
+
+// EQ-5D-5L: per-dimension validated labels (quality_life_survey.pdf)
+const EQ5L_DIMS_LABELS = {
+  MO: ['Я не испытываю никаких трудностей при ходьбе','Я испытываю небольшие трудности при ходьбе','Я испытываю умеренные трудности при ходьбе','Я испытываю большие трудности при ходьбе','Я не в состоянии ходить'],
+  SC: ['Я не испытываю никаких трудностей с мытьём или одеванием','Я испытываю небольшие трудности с мытьём или одеванием','Я испытываю умеренные трудности с мытьём или одеванием','Я испытываю большие трудности с мытьём или одеванием','Я не в состоянии сам(а) мыться или одеваться'],
+  UA: ['Моя привычная повседневная деятельность даётся мне без труда','Моя привычная повседневная деятельность для меня немного затруднительна','Моя привычная повседневная деятельность для меня умеренно затруднительна','Моя привычная повседневная деятельность для меня очень затруднительна','Я не в состоянии заниматься своей привычной повседневной деятельностью'],
+  PD: ['Я не испытываю боли или дискомфорта','Я испытываю небольшую боль или дискомфорт','Я испытываю умеренную боль или дискомфорт','Я испытываю сильную боль или дискомфорт','Я испытываю чрезвычайно сильную боль или дискомфорт'],
+  AD: ['Я не испытываю тревоги или депрессии','Я испытываю небольшую тревогу или депрессию','Я испытываю умеренную тревогу или депрессию','Я испытываю сильную тревогу или депрессию','Я испытываю крайне сильную тревогу или депрессию']
+};
+// Short level labels for results display
+const EQ5L_LEVEL_SHORT = ['Нет нарушений','Небольшие нарушения','Умеренные нарушения','Значительные нарушения','Крайняя степень нарушений'];
+const EQ5L_LABELS = EQ5L_LEVEL_SHORT; // fallback
+// EQ-5D-3L: per-dimension validated labels (EQ-5D-3L.pdf)
+const EQ3L_DIMS_LABELS = {
+  MO: ['Я не испытываю трудностей при ходьбе','Я испытываю некоторые трудности при ходьбе','Я прикован(а) к постели'],
+  SC: ['Я не испытываю трудностей при уходе за собой','Я испытываю некоторые трудности с мытьём или одеванием','Я не в состоянии сам(а) мыться или одеваться'],
+  UA: ['Я не испытываю трудностей в моей привычной повседневной деятельности','Я испытываю некоторые трудности в моей привычной повседневной деятельности','Я не в состоянии заниматься своей привычной повседневной деятельностью'],
+  PD: ['Я не испытываю боли или дискомфорта','Я испытываю умеренную боль или дискомфорт','Я испытываю крайне сильную боль или дискомфорт'],
+  AD: ['Я не испытываю тревоги или депрессии','Я испытываю умеренную тревогу или депрессию','Я испытываю крайне сильную тревогу или депрессию']
+};
+const EQ3L_LEVEL_SHORT = ['Нет нарушений','Умеренные нарушения','Тяжёлые нарушения'];
+const EQ3L_LABELS = EQ3L_LEVEL_SHORT; // fallback
+
+// UK EQ-5D-5L value set (van Hout et al. 2012)
+const W5L = {
+  MO:{1:0,2:-0.058,3:-0.076,4:-0.207,5:-0.274},
+  SC:{1:0,2:-0.050,3:-0.080,4:-0.164,5:-0.203},
+  UA:{1:0,2:-0.035,3:-0.052,4:-0.133,5:-0.193},
+  PD:{1:0,2:-0.063,3:-0.086,4:-0.276,5:-0.335},
+  AD:{1:0,2:-0.058,3:-0.060,4:-0.210,5:-0.285},
+  intercept:1.0, N5:-0.071
+};
+
+// Russian EQ-5D-3L value set (Omelyanovskiy et al. 2021)
+const W3L_RU = {
+  MO:{1:0,2:-0.041,3:-0.458},
+  SC:{1:0,2:-0.075,3:-0.246},
+  UA:{1:0,2:-0.073,3:-0.242},
+  PD:{1:0,2:-0.066,3:-0.377},
+  AD:{1:0,2:-0.041,3:-0.179},
+  intercept:1.0, N3:0
+};
+
+// Moscow EQ-5D-5L population norms (Holownia-Voloskova et al. 2021)
+const EQ5L_MOSCOW_NORMS = {
+  all:{
+    '18-24':{index:{m:0.934,sd:0.090},vas:{m:78.7,sd:14.8}},
+    '25-34':{index:{m:0.937,sd:0.074},vas:{m:80.2,sd:13.0}},
+    '35-44':{index:{m:0.938,sd:0.064},vas:{m:77.5,sd:14.4}},
+    '45-54':{index:{m:0.917,sd:0.081},vas:{m:75.3,sd:16.8}},
+    '55-64':{index:{m:0.908,sd:0.084},vas:{m:74.2,sd:15.2}},
+    '65-74':{index:{m:0.855,sd:0.122},vas:{m:62.2,sd:18.0}},
+    '75+':{index:{m:0.778,sd:0.169},vas:{m:59.5,sd:20.0}},
+    '_all':{index:{m:0.907,sd:0.106},vas:{m:74.1,sd:17.3}}
+  },
+  male:{
+    '18-24':{index:{m:0.960,sd:0.056},vas:{m:83.2,sd:12.1}},
+    '25-34':{index:{m:0.937,sd:0.070},vas:{m:80.2,sd:13.9}},
+    '35-44':{index:{m:0.952,sd:0.060},vas:{m:79.1,sd:12.8}},
+    '45-54':{index:{m:0.935,sd:0.075},vas:{m:78.0,sd:16.9}},
+    '55-64':{index:{m:0.928,sd:0.066},vas:{m:73.2,sd:15.1}},
+    '65-74':{index:{m:0.878,sd:0.079},vas:{m:62.8,sd:17.7}},
+    '75+':{index:{m:0.802,sd:0.099},vas:{m:61.0,sd:19.0}},
+    '_all':{index:{m:0.923,sd:0.083},vas:{m:75.3,sd:17.4}}
+  },
+  female:{
+    '18-24':{index:{m:0.911,sd:0.106},vas:{m:74.9,sd:15.9}},
+    '25-34':{index:{m:0.937,sd:0.077},vas:{m:80.2,sd:12.3}},
+    '35-44':{index:{m:0.927,sd:0.065},vas:{m:76.3,sd:15.6}},
+    '45-54':{index:{m:0.902,sd:0.083},vas:{m:73.1,sd:16.6}},
+    '55-64':{index:{m:0.886,sd:0.094},vas:{m:75.1,sd:15.4}},
+    '65-74':{index:{m:0.835,sd:0.143},vas:{m:61.7,sd:18.5}},
+    '75+':{index:{m:0.759,sd:0.210},vas:{m:57.0,sd:21.0}},
+    '_all':{index:{m:0.893,sd:0.120},vas:{m:73.0,sd:17.2}}
+  }
+};
+
+const EQ5L_MOSCOW_LEVELS={MO:{1:64.3,2:23.1,3:8.8,4:3.6,5:0.1},SC:{1:88.5,2:9.0,3:1.5,4:1.0,5:0.0},UA:{1:68.0,2:23.9,3:5.8,4:1.9,5:0.4},PD:{1:51.4,2:36.8,3:9.4,4:2.1,5:0.4},AD:{1:55.9,2:30.6,3:10.4,4:2.4,5:0.8}};
+
+function calcEQ5D(profile,type){const W=type==='5L'?W5L:W3L_RU;let idx=W.intercept;for(const dim of EQ_DIMS)idx+=(W[dim.code][profile[dim.code]]??0);const worst=type==='5L'?5:3;const penKey=type==='5L'?'N5':'N3';if(W[penKey]!==0&&Object.values(profile).some(v=>v===worst))idx+=W[penKey];return Math.round(idx*1000)/1000;}
+
+let sfDB=[],eqDB=[],sfBatchData=[],eqBatchData=[],sfBatchResults=[],eqBatchResults=[],sfCurrentResults=null,eqCurrentResults=null,currentEqBatchType='5L',sfPop='RF',sfRadarChart=null,sfBatchRadarChart=null;
+
+function loadDB(){try{sfDB=JSON.parse(localStorage.getItem('sf36_v4')||'[]')}catch(e){sfDB=[]}try{eqDB=JSON.parse(localStorage.getItem('eq5d_v4')||'[]')}catch(e){eqDB=[]}}
+function saveDB(){try{localStorage.setItem('sf36_v4',JSON.stringify(sfDB))}catch(e){toast('Ошибка localStorage','error')}try{localStorage.setItem('eq5d_v4',JSON.stringify(eqDB))}catch(e){}}
+
+function toast(msg,type='success',dur=3000){const el=document.createElement('div');el.className=`toast-msg ${type}`;el.textContent=({success:'✓',error:'✗',warning:'⚠'}[type]||'')+' '+msg;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),dur);}
+
+function showPage(pageId){document.querySelectorAll('.page-section').forEach(el=>el.classList.remove('visible'));const el=document.getElementById(pageId);if(el)el.classList.add('visible');}
+
+function getAgeGroup(age){if(age<25)return'18-24';if(age<35)return'25-34';if(age<45)return'35-44';if(age<55)return'45-54';if(age<65)return'55-64';if(age<75)return'65-74';return'75+';}
+function getRFNorm(age,gender){const grp=getAgeGroup(age);const g=gender==='male'?'male':gender==='female'?'female':'all';return RF_NORMS[g][grp]||RF_NORMS.all['_all'];}
+
+function initNav(){
+  document.querySelectorAll('.system-tab').forEach(btn=>{btn.addEventListener('click',()=>{
+    document.querySelectorAll('.system-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+    const sys=btn.dataset.sys;
+    document.getElementById('sf36-sidebar').style.display=sys==='sf36'?'block':'none';
+    document.getElementById('eq5d-sidebar').style.display=sys==='eq5d'?'block':'none';
+    const firstBtn=document.querySelector(`[data-sys="${sys}"][data-page]`);if(firstBtn)firstBtn.click();
+  });});
+  document.querySelectorAll('[data-page]').forEach(btn=>{btn.addEventListener('click',()=>{
+    const sys=btn.dataset.sys;
+    document.querySelectorAll(`[data-sys="${sys}"][data-page]`).forEach(b=>b.classList.remove('active'));
+    // Also deactivate the hidden DB button
+    const dbBtn=document.getElementById(sys==='sf36'?'sf-db-sidebar-btn':'eq-db-sidebar-btn');
+    if(dbBtn)dbBtn.classList.remove('active');
+    btn.classList.add('active');showPage(btn.dataset.page);
+    if(btn.dataset.page==='sf36-db')renderSFDB();if(btn.dataset.page==='eq5d-db')renderEQDB();
+  });});
+}
+
+function buildSF36Form(){
+  const container=document.getElementById('sf-questions-container');let lastDomain='';
+  SF36_Q.forEach(q=>{
+    if(q.domain!==lastDomain){const dh=document.createElement('div');dh.className='domain-header';dh.textContent=q.domain;container.appendChild(dh);lastDomain=q.domain;}
+    const block=document.createElement('div');block.className='question-block';block.id=`qblock-${q.id}`;
+    const txt=document.createElement('div');txt.className='question-text';txt.textContent=q.text;block.appendChild(txt);
+    const opts=document.createElement('div');opts.className='options-grid';
+    q.opts.forEach(opt=>{
+      const wrap=document.createElement('div');wrap.className='opt';
+      const inp=document.createElement('input');inp.type='radio';inp.name=q.id;inp.id=`${q.id}_${opt.v}`;inp.value=opt.v;
+      inp.addEventListener('change',()=>{block.classList.add('answered');block.classList.remove('error-q');updateSFProgress();});
+      const lbl=document.createElement('label');lbl.htmlFor=inp.id;lbl.textContent=opt.t;
+      wrap.appendChild(inp);wrap.appendChild(lbl);opts.appendChild(wrap);
+    });
+    block.appendChild(opts);container.appendChild(block);
+  });
+}
+
+function updateSFProgress(){const answered=document.querySelectorAll('#sf-questions-container input[type=radio]:checked').length;const pct=Math.round(answered/SF36_Q.length*100);document.getElementById('sf-prog-fill').style.width=pct+'%';document.getElementById('sf-prog-fill').className='progress-fill'+(pct===100?' complete':'');document.getElementById('sf-prog-text').textContent=`${answered} / ${SF36_Q.length}`;}
+
+function getFormAnswers(){const a={};SF36_Q.forEach(q=>{const sel=document.querySelector(`input[name="${q.id}"]:checked`);if(sel)a[q.id]=parseInt(sel.value);});return a;}
+
+function calcSF36Scores(answers){const pre={};for(const[id,fn]of Object.entries(SF36_SCORE_MAP)){if(answers[id]!=null)pre[id]=fn(answers[id]);}const scores={};for(const[dom,items]of Object.entries(DOMAIN_ITEMS)){const vals=items.map(i=>pre[i]).filter(v=>v!=null);scores[dom]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;}return scores;}
+
+function calcPCS_MCS(scores){const tScores={};for(const dom of Object.keys(DOMAIN_ITEMS)){if(scores[dom]!=null)tScores[dom]=((scores[dom]-AGG_MEANS[dom])/AGG_SDS[dom])*10+50;}let pcs=0,mcs=0;for(const dom of Object.keys(PCS_W)){pcs+=(tScores[dom]??0)*PCS_W[dom];mcs+=(tScores[dom]??0)*MCS_W[dom];}return{PCS:Math.max(0,Math.min(100,pcs)),MCS:Math.max(0,Math.min(100,mcs))};}
+
+function calculateSF36Main(){
+  const d=document.getElementById('sf-date').value,g=document.getElementById('sf-gender').value,a=document.getElementById('sf-age').value,dis=document.getElementById('sf-disease').value;
+  let ok=true;[['sf-date',d],['sf-gender',g],['sf-age',a],['sf-disease',dis]].forEach(([id,v])=>{const el=document.getElementById(id);if(!v){el.classList.add('error');ok=false;}else el.classList.remove('error');});
+  if(!ok){toast('Заполните данные пациента','error');return;}
+  const answers=getFormAnswers(),missing=SF36_Q.filter(q=>answers[q.id]==null);
+  if(missing.length){missing.forEach(q=>document.getElementById(`qblock-${q.id}`)?.classList.add('error-q'));toast(`Не отвечено на ${missing.length} вопрос(ов)`,'error');document.getElementById(`qblock-${missing[0].id}`)?.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  const scores=calcSF36Scores(answers),summary=calcPCS_MCS(scores);
+  sfCurrentResults={patientInfo:{date:d,gender:g,age:parseInt(a),disease:dis,status:document.querySelector('input[name="sf-status"]:checked')?.value||'',population:sfPop},answers,scores,summary,timestamp:new Date().toISOString()};
+  renderSF36Results(scores,summary,sfCurrentResults.patientInfo);
+  saveSFPatient();
+  document.getElementById('sf-results-area').style.display='block';
+  document.getElementById('sf-results-area').scrollIntoView({behavior:'smooth'});
+  // auto-saved silently
+}
+
+function renderSF36Results(scores,summary,info){
+  const gText=info.gender==='male'?'Мужской':'Женский';
+  const stText=info.status==='remission'?'Ремиссия / Неакт.':info.status==='active'?'Рецидив / Акт.':'—';
+  document.getElementById('sf-patient-meta').innerHTML=`<div class="info-row-meta">
+    <span class="badge badge-gray">📅 ${info.date}</span>
+    <span class="badge badge-gray">👤 ${gText}, ${info.age} лет</span>
+    <span class="badge badge-gray">🏥 ${info.disease||'—'}</span>
+    <span class="badge ${info.status==='remission'?'badge-green':'badge-orange'}">${stText}</span>
+    <span class="badge badge-blue">🌍 ${info.population==='RF'?'Рос. нормы (МИРАЖ)':'Амер. нормы'}</span>
+  </div>`;
+  const domRes=document.getElementById('sf-domain-results');domRes.innerHTML='';
+  DOM_ORDER.forEach(dom=>{const v=scores[dom];if(v==null)return;const cls=v>=70?'high':v>=40?'mid':'low';const card=document.createElement('div');card.className='score-card';card.innerHTML=`<div class="score-domain">${DOMAIN_NAMES[dom]} (${dom})</div><div class="score-bar-row"><span class="score-val">${v.toFixed(1)}</span><div class="score-bar-track"><div class="score-bar-fill ${cls}" style="width:${v}%"></div></div></div>`;domRes.appendChild(card);});
+  const pcsC=summary.PCS>=50?'#16a34a':'#d97706',mcsC=summary.MCS>=50?'#16a34a':'#d97706';
+  document.getElementById('sf-summary-row').innerHTML=`<div class="summary-big"><div class="lbl">Физический компонент (PCS)</div><div class="val" style="color:${pcsC}">${summary.PCS.toFixed(1)}</div><div style="font-size:11px;color:var(--text4);margin-top:4px">Норма ≥ 50</div></div><div class="summary-big"><div class="lbl">Психологический компонент (MCS)</div><div class="val" style="color:${mcsC}">${summary.MCS.toFixed(1)}</div><div style="font-size:11px;color:var(--text4);margin-top:4px">Норма ≥ 50</div></div>`;
+  document.getElementById('sf-radar-title').textContent='Профиль качества жизни — пациент vs норма РФ';
+  renderSFRadarSingle(scores,info);
+  if(info.population==='RF')renderSFNormCompare(scores,info);else document.getElementById('sf-norm-compare').innerHTML='';
+  renderSFDomainLevelTable(scores,info);
+}
+
+function renderSFRadarSingle(scores,info){
+  const ctx=document.getElementById('sf-radar-chart').getContext('2d');
+  if(sfRadarChart)sfRadarChart.destroy();
+  const datasets=[{label:'Пациент',data:DOM_ORDER.map(d=>scores[d]!=null?parseFloat(scores[d].toFixed(1)):0),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.15)',pointBackgroundColor:'#2563eb',borderWidth:2.5,pointRadius:5}];
+  if(info&&info.population==='RF'&&info.age&&info.gender){const nd=getRFNorm(info.age,info.gender);if(nd)datasets.push({label:`Норма РФ (${info.gender==='male'?'муж':'жен'}, ${getAgeGroup(info.age)} л.)`,data:DOM_ORDER.map(d=>nd[d]?parseFloat(nd[d].m.toFixed(1)):50),borderColor:'rgba(217,119,6,0.8)',backgroundColor:'rgba(217,119,6,0.04)',borderWidth:1.5,borderDash:[8,4],pointRadius:2,pointBackgroundColor:'rgba(217,119,6,0.8)'});}
+  sfRadarChart=new Chart(ctx,{type:'radar',data:{labels:DOM_ORDER,datasets},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:20,font:{size:11},backdropColor:'transparent'},pointLabels:{font:{size:12,weight:'600'}},grid:{color:'rgba(0,0,0,0.08)'}}},plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12}}}}});
+}
+
+function renderSFNormCompare(scores,info){
+  const nd=getRFNorm(info.age,info.gender);
+  if(!nd){document.getElementById('sf-norm-compare').innerHTML='';return;}
+  let html=`<div class="norm-section"><div class="norm-title">📊 Сравнение с нормами РФ (МИРАЖ) <span class="badge badge-blue" style="font-size:10px">${info.gender==='male'?'Мужчины':'Женщины'}, ${getAgeGroup(info.age)} лет</span></div><div class="norm-grid">`;
+  DOM_ORDER.forEach(dom=>{const pv=scores[dom],n=nd[dom];if(pv==null||!n)return;const diff=pv-n.p50,cls=diff>5?'better':diff<-5?'worse':'similar',sign=diff>0?'+':'';html+=`<div class="norm-item"><div class="norm-domain">${dom}</div><div class="norm-val">${pv.toFixed(1)}</div><div class="norm-diff ${cls}">${sign}${diff.toFixed(1)} vs Me ${n.p50.toFixed(1)}</div><div style="font-size:10px;color:var(--text4)">Me: ${n.p50.toFixed(1)} | IQR: ${n.p25.toFixed(1)}–${n.p75.toFixed(1)}</div></div>`;});
+  html+=`</div><div class="ref-block">📖 <strong>Источник:</strong> Амирджанова В.Н. и др. <em>Научно-практическая ревматология.</em> 2008;1:36–48. n=3344. <a href="https://www.venousregistry.org/files/link23.pdf" target="_blank" class="ref-link">Полный текст PDF ↗</a></div></div>`;
+  document.getElementById('sf-norm-compare').innerHTML=html;
+}
+
+function renderSFDomainLevelTable(scores,info){
+  const container=document.getElementById('sf-domain-level-table');
+  const normData=(info&&info.population==='RF'&&info.age&&info.gender)?getRFNorm(info.age,info.gender):null;
+  let html=`<div class="chart-wrap"><div class="chart-title">Показатели доменов SF-36${normData?' и сравнение с нормами РФ (МИРАЖ)':''}</div><table class="level-table"><thead><tr><th style="text-align:left">Домен</th><th>Балл пациента</th><th>Визуализация</th>${normData?'<th>Медиана нормы РФ</th><th>IQR нормы</th><th>Δ от медианы</th>':''}</tr></thead><tbody>`;
+  DOM_ORDER.forEach(dom=>{const v=scores[dom];if(v==null)return;
+    const n=normData?normData[dom]:null;
+    const diff=n?(v-n.p50):null;
+    const dcls=diff!=null?(diff>5?'score-high':diff<-5?'score-low':''):'';
+    const dsign=diff!=null?(diff>0?'+':''):'';
+    // Bar color based on distance from norm median
+    const barColor=!n?'var(--primary)':diff>5?'var(--success)':diff<-5?'var(--danger)':'var(--warning)';
+    html+=`<tr><td style="font-weight:500">${DOMAIN_NAMES[dom]} (${dom})</td><td style="font-family:var(--mono);font-weight:600;text-align:center">${v.toFixed(1)}</td><td style="min-width:120px"><div style="height:8px;background:var(--border);border-radius:99px;overflow:hidden"><div style="width:${v}%;height:100%;background:${barColor};border-radius:99px"></div></div></td>${n?`<td style="text-align:center">${n.p50.toFixed(1)}</td><td style="text-align:center;font-size:11px;color:var(--text3)">${n.p25.toFixed(1)}–${n.p75.toFixed(1)}</td><td class="${dcls}" style="text-align:center;font-weight:600">${dsign}${diff!=null?diff.toFixed(1):'—'}</td>`:''}`;});
+  html+=`</tbody></table>`;
+  if(normData)html+=`<div class="ref-block" style="margin-top:8px">📖 Нормы: Амирджанова В.Н. и др. <em>НПР.</em> 2008;1:36–48. n=3344. <a href="https://www.venousregistry.org/files/link23.pdf" target="_blank" class="ref-link">PDF ↗</a></div>`;
+  html+=`</div>`;
+  container.innerHTML=html;
+}
+
+function saveSFPatient(){
+  if(!sfCurrentResults){toast('Сначала рассчитайте результаты','error');return;}
+  const id='SF'+Date.now().toString(36).toUpperCase();
+  const rec=JSON.parse(JSON.stringify({id,...sfCurrentResults}));
+  sfDB.push(rec);
+  saveDB(); // silent auto-save
+  sendDataEmail('SF-36 | '+id, formatSF36Email(rec));
+}
+
+function clearSFForm(){
+  if(!confirm('Очистить форму?'))return;
+  document.querySelectorAll('#sf-questions-container input[type=radio]').forEach(r=>r.checked=false);
+  document.querySelectorAll('.question-block').forEach(b=>b.classList.remove('answered','error-q'));
+  ['sf-date','sf-gender','sf-age','sf-disease'].forEach(id=>{document.getElementById(id).value='';document.getElementById(id).classList.remove('error');});
+  document.querySelectorAll('input[name="sf-status"]').forEach(r=>r.checked=false);
+  updateSFProgress();document.getElementById('sf-results-area').style.display='none';document.getElementById('sf-save-btn').disabled=true;sfCurrentResults=null;document.getElementById('sf-date').valueAsDate=new Date();
+}
+
+/* SF-36 BATCH */
+function initSFBatch(){
+  const drop=document.getElementById('sf-file-drop'),inp=document.getElementById('sf-file-input');
+  drop.addEventListener('click',()=>inp.click());drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag-over');});drop.addEventListener('dragleave',()=>drop.classList.remove('drag-over'));drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag-over');if(e.dataTransfer.files[0])handleSFFile(e.dataTransfer.files[0]);});inp.addEventListener('change',()=>{if(inp.files[0])handleSFFile(inp.files[0]);});
+  document.getElementById('sf-process-btn').addEventListener('click',processSFBatch);document.getElementById('sf-template-btn').addEventListener('click',downloadSFTemplate);document.getElementById('sf-clear-batch-btn').addEventListener('click',clearSFBatch);document.getElementById('sf-export-batch-btn').addEventListener('click',exportSFBatchResults);
+}
+
+function handleSFFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{try{let data;if(file.name.endsWith('.csv')){const wb=XLSX.read(e.target.result,{type:'binary'});data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});}else{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});}if(!data.length){toast('Файл пустой','error');return;}sfBatchData=data;renderPreviewTable(data.slice(0,5),'sf-preview-table');document.getElementById('sf-batch-preview').style.display='block';document.getElementById('sf-process-btn').disabled=false;toast(`Загружено ${data.length} строк`);}catch(err){toast('Ошибка: '+err.message,'error');}};
+  if(file.name.endsWith('.csv'))reader.readAsBinaryString(file);else reader.readAsArrayBuffer(file);
+}
+
+function processSFBatch(){
+  if(!sfBatchData.length)return;
+  const results=[];
+  sfBatchData.forEach((row,ri)=>{
+    const answers={};SF36_Q.forEach(q=>{const v=parseInt(row[q.id]);if(!isNaN(v))answers[q.id]=v;});
+    const scores=calcSF36Scores(answers),summary=calcPCS_MCS(scores),nMissing=SF36_Q.length-Object.keys(answers).length;
+    results.push({ID:row.ID||`ROW${ri+1}`,Date:row.Date||'',Gender:row.Gender||'',Age:row.Age||'',Disease:row.Disease||'',Status:row.Status||'',Пропущено:nMissing,PF:scores.PF?.toFixed(1)??'—',RP:scores.RP?.toFixed(1)??'—',BP:scores.BP?.toFixed(1)??'—',GH:scores.GH?.toFixed(1)??'—',VT:scores.VT?.toFixed(1)??'—',SF:scores.SF?.toFixed(1)??'—',RE:scores.RE?.toFixed(1)??'—',MH:scores.MH?.toFixed(1)??'—',PCS:summary.PCS.toFixed(1),MCS:summary.MCS.toFixed(1),_scores:scores,_summary:summary});
+  });
+  sfBatchResults=results;
+  const n=results.length,pcsMean=(results.reduce((s,r)=>s+parseFloat(r.PCS),0)/n).toFixed(1),mcsMean=(results.reduce((s,r)=>s+parseFloat(r.MCS),0)/n).toFixed(1),nValid=results.filter(r=>parseInt(r.Пропущено)===0).length;
+  document.getElementById('sf-batch-stats').innerHTML=`<div class="stat-box"><div class="stat-val">${n}</div><div class="stat-lbl">Всего строк</div></div><div class="stat-box"><div class="stat-val">${nValid}</div><div class="stat-lbl">Полных анкет</div></div><div class="stat-box"><div class="stat-val">${pcsMean}</div><div class="stat-lbl">Ср. PCS</div></div><div class="stat-box"><div class="stat-val">${mcsMean}</div><div class="stat-lbl">Ср. MCS</div></div>`;
+  const domStats={};
+  DOM_ORDER.forEach(dom=>{const vals=results.map(r=>parseFloat(r[dom])).filter(v=>!isNaN(v)).sort((a,b)=>a-b);if(vals.length)domStats[dom]={med:pct(vals,50),q25:pct(vals,25),q75:pct(vals,75),mean:vals.reduce((s,v)=>s+v,0)/vals.length};});
+  renderSFBatchRadar(domStats);
+  renderSFBatchNormBlock(domStats);
+  renderSFBatchLevelBlock(results);
+  const cols=['ID','Date','Gender','Age','Disease','Status','Пропущено','PF','RP','BP','GH','VT','SF','RE','MH','PCS','MCS'];
+  let html='<div class="table-wrap"><table><thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';
+  results.forEach(r=>{html+='<tr>'+cols.map(c=>{const v=r[c]??'';let cls='';if(['PCS','MCS'].includes(c))cls=parseFloat(v)>=50?'score-high':parseFloat(v)>=35?'score-mid':'score-low';if(c==='Пропущено'&&parseInt(v)>0)cls='score-low';return`<td class="${cls}">${v}</td>`;}).join('')+'</tr>';});
+  html+='</tbody></table></div>';
+  document.getElementById('sf-batch-table').innerHTML=html;document.getElementById('sf-batch-results').style.display='block';
+  let savedCount=0;
+  results.forEach(r=>{
+    if(parseInt(r.Пропущено)===0){
+      const rec={id:'SFB'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,5),patientInfo:{date:r.Date||'',gender:(r.Gender||'').toLowerCase(),age:parseInt(r.Age)||null,disease:r.Disease||'',status:r.Status||'',population:'RF'},scores:r._scores,summary:r._summary,timestamp:new Date().toISOString(),source:'batch'};
+      sfDB.push(rec);savedCount++;
+    }
+  });
+  if(savedCount>0){
+    saveDB();
+    // Send one summary email for the whole batch
+    const batchLines=['=== SF-36 BATCH ===',`Записей обработано: ${n}`,`Сохранено валидных: ${savedCount}`,`Время: ${new Date().toISOString()}`,'','ID | Дата | Пол | Возраст | Диагноз | Статус | PF | RP | BP | GH | VT | SF | RE | MH | PCS | MCS'];
+    results.filter(r=>parseInt(r.Пропущено)===0).forEach(r=>{batchLines.push([r.ID,r.Date,r.Gender,r.Age,r.Disease,r.Status,r.PF,r.RP,r.BP,r.GH,r.VT,r.SF,r.RE,r.MH,r.PCS,r.MCS].join(' | '));});
+    sendDataEmail(`SF-36 Batch | ${savedCount} записей | ${new Date().toLocaleDateString('ru')}`, batchLines.join('\n'));
+  }
+  toast(`Обработано ${n} записей (${savedCount} сохранено в базу)`);
+}
+
+function pct(sorted,p){const idx=(p/100)*(sorted.length-1),lo=Math.floor(idx),hi=Math.ceil(idx);return sorted[lo]+(sorted[hi]-sorted[lo])*(idx-lo);}
+
+function renderSFBatchRadar(domStats){
+  const medData=DOM_ORDER.map(d=>domStats[d]?parseFloat(domStats[d].med.toFixed(1)):0);
+  const q25Data=DOM_ORDER.map(d=>domStats[d]?parseFloat(domStats[d].q25.toFixed(1)):0);
+  const q75Data=DOM_ORDER.map(d=>domStats[d]?parseFloat(domStats[d].q75.toFixed(1)):0);
+  const rfData=DOM_ORDER.map(d=>RF_NORMS.all['_all'][d]?parseFloat(RF_NORMS.all['_all'][d].m.toFixed(1)):50);
+  const ctx=document.getElementById('sf-batch-radar').getContext('2d');
+  if(sfBatchRadarChart)sfBatchRadarChart.destroy();
+  sfBatchRadarChart=new Chart(ctx,{type:'radar',data:{labels:DOM_ORDER,datasets:[
+    {label:'Медиана выборки',data:medData,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.15)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#2563eb'},
+    {label:'Q75',data:q75Data,borderColor:'rgba(22,163,74,0.7)',backgroundColor:'rgba(22,163,74,0.07)',borderWidth:1.5,borderDash:[5,3],pointRadius:3,pointBackgroundColor:'rgba(22,163,74,0.7)'},
+    {label:'Q25',data:q25Data,borderColor:'rgba(220,38,38,0.7)',backgroundColor:'rgba(220,38,38,0.07)',borderWidth:1.5,borderDash:[5,3],pointRadius:3,pointBackgroundColor:'rgba(220,38,38,0.7)'},
+    {label:'Норма РФ (МИРАЖ, общая)',data:rfData,borderColor:'rgba(217,119,6,0.8)',backgroundColor:'rgba(217,119,6,0.04)',borderWidth:1.5,borderDash:[8,4],pointRadius:2,pointBackgroundColor:'rgba(217,119,6,0.8)'}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:20,font:{size:11},backdropColor:'transparent'},pointLabels:{font:{size:12,weight:'600'}},grid:{color:'rgba(0,0,0,0.08)'}}},plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12}}}}});
+}
+
+function renderSFBatchNormBlock(domStats){
+  const nd=RF_NORMS.all['_all'];
+  let html=`<div class="chart-wrap"><div class="chart-title">Сравнение выборки с нормами РФ (МИРАЖ, n=3344)</div><div class="norm-grid" style="padding:0 8px 8px">`;
+  DOM_ORDER.forEach(dom=>{const ds=domStats[dom],n=nd[dom];if(!ds||!n)return;const diff=ds.mean-n.p50,cls=diff>5?'better':diff<-5?'worse':'similar',sign=diff>0?'+':'';html+=`<div class="norm-item"><div class="norm-domain">${dom}</div><div class="norm-val">${ds.mean.toFixed(1)}</div><div class="norm-diff ${cls}">${sign}${diff.toFixed(1)} vs Me ${n.p50.toFixed(1)}</div><div style="font-size:10px;color:var(--text4)">Me норма: ${n.p50.toFixed(1)} | IQR: ${n.p25.toFixed(1)}–${n.p75.toFixed(1)}</div></div>`;});
+  html+=`</div><div class="ref-block" style="margin:8px 8px 0">📖 Амирджанова В.Н. и др. <em>НПР.</em> 2008;1:36–48. n=3344. <a href="https://www.venousregistry.org/files/link23.pdf" target="_blank" class="ref-link">DOI ↗</a></div></div>`;
+  document.getElementById('sf-batch-norm-block').innerHTML=html;
+}
+
+function renderSFBatchLevelBlock(results){
+  if(!results.length){document.getElementById('sf-batch-level-block').innerHTML='';return;}
+  const n=results.length;
+  const rfNorm=RF_NORMS.all['_all'];
+  let html=`<div class="chart-wrap"><div class="chart-title">Показатели доменов SF-36 в выборке — сравнение с нормами РФ (МИРАЖ)</div><table class="level-table"><thead><tr><th style="text-align:left">Домен</th><th>Среднее</th><th>Медиана</th><th>IQR</th><th>Медиана нормы РФ</th><th>IQR нормы</th><th>Δ среднее vs Ме нормы</th></tr></thead><tbody>`;
+  DOM_ORDER.forEach(dom=>{
+    const vals=results.map(r=>parseFloat(r[dom])).filter(v=>!isNaN(v)).sort((a,b)=>a-b);if(!vals.length)return;
+    const mean=vals.reduce((s,v)=>s+v,0)/vals.length;
+    const med=pct(vals,50),q25=pct(vals,25),q75=pct(vals,75);
+    const n_=rfNorm[dom];const diff=n_?(mean-n_.p50):null;
+    const dcls=diff!=null?(diff>5?'score-high':diff<-5?'score-low':''):'';
+    const dsign=diff!=null?(diff>0?'+':''):'';
+    html+=`<tr><td style="font-weight:500">${DOMAIN_NAMES[dom].split(' ')[0]} (${dom})</td><td style="font-family:var(--mono);text-align:center">${mean.toFixed(1)}</td><td style="font-family:var(--mono);text-align:center">${med.toFixed(1)}</td><td style="text-align:center;font-size:11px;color:var(--text3)">${q25.toFixed(1)}–${q75.toFixed(1)}</td><td style="text-align:center">${n_?n_.p50.toFixed(1):'—'}</td><td style="text-align:center;font-size:11px;color:var(--text3)">${n_?n_.p25.toFixed(1)+'–'+n_.p75.toFixed(1):'—'}</td><td class="${dcls}" style="text-align:center;font-weight:600">${dsign}${diff!=null?diff.toFixed(1):'—'}</td></tr>`;
+  });
+  html+=`</tbody></table><div class="ref-block" style="margin-top:8px">📖 Нормы: Амирджанова В.Н. и др. <em>НПР.</em> 2008;1:36–48. n=3344. <a href="https://www.venousregistry.org/files/link23.pdf" target="_blank" class="ref-link">PDF ↗</a></div></div>`;
+  document.getElementById('sf-batch-level-block').innerHTML=html;
+}
+
+function exportSFBatchResults(){if(!sfBatchResults.length)return;const cols=['ID','Date','Gender','Age','Disease','Status','Пропущено','PF','RP','BP','GH','VT','SF','RE','MH','PCS','MCS'];const rows=sfBatchResults.map(r=>cols.map(c=>r[c]??''));const ws=XLSX.utils.aoa_to_sheet([cols,...rows]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'SF-36 Results');XLSX.writeFile(wb,`sf36_results_${Date.now()}.xlsx`);toast('Экспорт завершён');}
+function downloadSFTemplate(){const headers=['ID','Date','Gender','Age','Disease','Status','Q1','Q2','Q3A','Q3B','Q3C','Q3D','Q3E','Q3F','Q3G','Q3H','Q3I','Q3J','Q4A','Q4B','Q4C','Q4D','Q5A','Q5B','Q5C','Q6','Q7','Q8','Q9A','Q9B','Q9C','Q9D','Q9E','Q9F','Q9G','Q9H','Q9I','Q10','Q11A','Q11B','Q11C','Q11D'];const example=['001','2024-01-15','male','52','ИБС','active',3,2,2,3,2,2,3,2,2,3,3,3,1,1,2,2,2,1,2,2,3,3,3,4,4,3,3,4,4,3,4,3,2,3,4,3];const ws=XLSX.utils.aoa_to_sheet([headers,example]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'SF-36 Template');XLSX.writeFile(wb,'sf36_template.xlsx');toast('Шаблон скачан');}
+function clearSFBatch(){sfBatchData=[];sfBatchResults=[];document.getElementById('sf-file-input').value='';document.getElementById('sf-batch-preview').style.display='none';document.getElementById('sf-batch-results').style.display='none';document.getElementById('sf-process-btn').disabled=true;toast('Данные очищены');}
+
+/* SF-36 DB */
+function renderSFDB(filter){
+  let data=sfDB;
+  if(filter){const q=(filter.q||'').toLowerCase(),g=filter.gender||'',st=filter.status||'',amin=filter.ageMin?parseInt(filter.ageMin):null,amax=filter.ageMax?parseInt(filter.ageMax):null;data=sfDB.filter(r=>{const pi=r.patientInfo||{};if(q&&!(r.id.toLowerCase().includes(q)||(pi.disease||'').toLowerCase().includes(q)))return false;if(g&&pi.gender!==g)return false;if(st&&pi.status!==st)return false;if(amin!=null&&pi.age<amin)return false;if(amax!=null&&pi.age>amax)return false;return true;});}
+  document.getElementById('sf-db-total').textContent=data.length;const ages=data.map(r=>r.patientInfo?.age).filter(Boolean);document.getElementById('sf-db-avg-age').textContent=ages.length?(ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(1):'—';document.getElementById('sf-db-male').textContent=data.filter(r=>r.patientInfo?.gender==='male').length;document.getElementById('sf-db-female').textContent=data.filter(r=>r.patientInfo?.gender==='female').length;
+  const wrap=document.getElementById('sf-db-table');
+  if(!data.length){wrap.innerHTML=`<div class="empty-state"><div class="empty-state-icon">📭</div><div style="font-size:14px">Нет записей</div><div style="font-size:12px;margin-top:4px;color:var(--text4)">Сохраните результаты пациента на вкладке «Опросник»</div></div>`;return;}
+  let html='<div class="table-wrap"><table><thead><tr><th>ID</th><th>Дата</th><th>Пол</th><th>Возраст</th><th>Диагноз</th><th>Статус</th><th>PCS</th><th>MCS</th><th>PF</th><th>RP</th><th>BP</th><th>GH</th><th>VT</th><th>SF</th><th>RE</th><th>MH</th><th></th></tr></thead><tbody>';
+  data.slice(0,100).forEach(r=>{const pi=r.patientInfo||{},g2=pi.gender==='male'?'М':'Ж',st=pi.status==='remission'?'🟢 Рем./Неакт.':pi.status==='active'?'🔴 Рецидив':'—',sc=r.scores||{},su=r.summary||{},pcs=su.PCS?.toFixed(1)??'—',mcs=su.MCS?.toFixed(1)??'—',pcsC=parseFloat(pcs)>=50?'score-high':parseFloat(pcs)>=35?'score-mid':'score-low',mcsC=parseFloat(mcs)>=50?'score-high':parseFloat(mcs)>=35?'score-mid':'score-low';html+=`<tr><td><span class="badge badge-gray">${r.id}</span></td><td>${pi.date||'—'}</td><td>${g2}</td><td>${pi.age||'—'}</td><td>${pi.disease||'—'}</td><td>${st}</td><td class="${pcsC}">${pcs}</td><td class="${mcsC}">${mcs}</td><td>${sc.PF?.toFixed(1)??'—'}</td><td>${sc.RP?.toFixed(1)??'—'}</td><td>${sc.BP?.toFixed(1)??'—'}</td><td>${sc.GH?.toFixed(1)??'—'}</td><td>${sc.VT?.toFixed(1)??'—'}</td><td>${sc.SF?.toFixed(1)??'—'}</td><td>${sc.RE?.toFixed(1)??'—'}</td><td>${sc.MH?.toFixed(1)??'—'}</td><td><button class="btn btn-danger btn-sm" onclick="deleteSFRecord('${r.id}')">🗑️</button></td></tr>`;});
+  html+='</tbody></table></div>';if(data.length>100)html+=`<div style="padding:8px 12px;font-size:12px;color:var(--text4)">Показано 100 из ${data.length}</div>`;
+  wrap.innerHTML=html;
+}
+
+window.deleteSFRecord=id=>{if(!confirm(`Удалить запись ${id}?`))return;sfDB=sfDB.filter(r=>r.id!==id);saveDB();renderSFDB();toast(`Запись ${id} удалена`,'warning');};
+
+function exportSFDB(){if(!sfDB.length){toast('База данных пуста','warning');return;}const cols=['ID','Date','Gender','Age','Disease','Status','PCS','MCS','PF','RP','BP','GH','VT','SF','RE','MH'];const rows=sfDB.map(r=>{const pi=r.patientInfo||{},sc=r.scores||{},su=r.summary||{};return[r.id,pi.date,pi.gender,pi.age,pi.disease,pi.status,su.PCS?.toFixed(1),su.MCS?.toFixed(1),sc.PF?.toFixed(1),sc.RP?.toFixed(1),sc.BP?.toFixed(1),sc.GH?.toFixed(1),sc.VT?.toFixed(1),sc.SF?.toFixed(1),sc.RE?.toFixed(1),sc.MH?.toFixed(1)];});const bom='\\uFEFF',csv=bom+[cols,...rows].map(r=>r.join(',')).join('\\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`sf36_db_${Date.now()}.csv`;a.click();toast('Экспорт завершён');}
+
+/* EQ-5D FORMS */
+function buildEQForm(containerId,type){
+  const container=document.getElementById(containerId);container.innerHTML='';
+  const dimLabels=type==='5L'?EQ5L_DIMS_LABELS:EQ3L_DIMS_LABELS;
+  const shortLabels=type==='5L'?EQ5L_LEVEL_SHORT:EQ3L_LEVEL_SHORT;
+  const prefix=type==='5L'?'eq5l':'eq3l';
+  const nLevels=type==='5L'?5:3;
+  // Instruction block
+  const instr=document.createElement('div');
+  instr.className='alert alert-info';
+  instr.style.marginBottom='12px';
+  instr.textContent='В каждом разделе отметьте галочкой ОДИН квадратик, который наилучшим образом отражает состояние Вашего здоровья СЕГОДНЯ.';
+  container.appendChild(instr);
+  EQ_DIMS.forEach((dim,di)=>{
+    const block=document.createElement('div');block.className='eq-dimension';block.id=`eqblock-${prefix}-${dim.code}`;
+    const descText=type==='5L'?dim.desc5L:dim.desc3L;
+    block.innerHTML=`<div class="eq-dim-title">${dim.name}</div>${descText?`<div class="eq-dim-desc">${descText}</div>`:''}`;
+    const dimLbls=dimLabels[dim.code]||[];
+    const opts=document.createElement('div');opts.className='eq-options';opts.style.flexDirection='column';opts.style.gap='6px';
+    for(let i=0;i<nLevels;i++){
+      const lvl=i+1,id=`${prefix}-${dim.code}-${lvl}`,wrap=document.createElement('div');
+      wrap.className='eq-opt';wrap.style.flex='none';wrap.style.minWidth='100%';
+      const fullText=dimLbls[i]||shortLabels[i]||`Уровень ${lvl}`;
+      wrap.innerHTML=`<input type="radio" name="${prefix}-${dim.code}" id="${id}" value="${lvl}">
+        <label for="${id}" style="flex-direction:row;justify-content:flex-start;gap:10px;padding:8px 12px;text-align:left">
+          <span class="eq-lvl" style="font-size:14px;min-width:24px">${lvl}</span>
+          <span class="eq-txt" style="font-size:13px;text-align:left">${fullText}</span>
+        </label>`;
+      opts.appendChild(wrap);
+    }
+    block.appendChild(opts);container.appendChild(block);
+  });
+}
+
+function calcEQMain(type){
+  const prefix=type==='5L'?'eq5l':'eq3l';
+  const dateVal=document.getElementById(prefix+'-date').value,ageVal=document.getElementById(prefix+'-age').value,disVal=document.getElementById(prefix+'-disease').value,genderVal=document.getElementById(prefix+'-gender').value;
+  if(!dateVal||!ageVal||!disVal){toast('Заполните данные пациента','error');return;}
+  const profile={};let allOk=true;
+  EQ_DIMS.forEach(dim=>{const sel=document.querySelector(`input[name="${prefix}-${dim.code}"]:checked`);if(sel)profile[dim.code]=parseInt(sel.value);else{document.getElementById(`eqblock-${prefix}-${dim.code}`)?.classList.add('error-q');allOk=false;}});
+  if(!allOk){toast('Выберите ответ для всех измерений','error');return;}
+  const vas=parseInt(document.getElementById(prefix+'-vas').value),profileStr=EQ_DIMS.map(d=>profile[d.code]).join(''),index=calcEQ5D(profile,type);
+  eqCurrentResults={patientInfo:{date:dateVal,gender:genderVal,age:parseInt(ageVal),disease:disVal,type,status:document.querySelector(`input[name="${prefix}-status"]:checked`)?.value||''},profile,profileStr,vas,index,timestamp:new Date().toISOString()};
+  renderEQResults(type,profile,profileStr,vas,index,parseInt(ageVal),genderVal);
+  saveEQResult(type); // auto-save
+  document.getElementById(prefix+'-results').style.display='block';document.getElementById(prefix+'-results').scrollIntoView({behavior:'smooth'});
+}
+
+function renderEQResults(type,profile,profileStr,vas,index,age,gender){
+  const prefix=type==='5L'?'eq5l':'eq3l',container=document.getElementById(prefix+'-result-content'),levels=type==='5L'?EQ5L_LABELS:EQ3L_LABELS;
+  let profileHtml='<div class="eq-profile-display">';
+  EQ_DIMS.forEach(dim=>{const lvl=profile[dim.code],color=lvl===1?'var(--success)':lvl===(type==='5L'?5:3)?'var(--danger)':'var(--warning)';profileHtml+=`<div class="eq-profile-cell"><div class="eq-profile-dim">${dim.name}</div><div class="eq-profile-val" style="color:${color}">${lvl}</div><div style="font-size:10px;color:var(--text4);margin-top:2px">${levels[lvl-1]}</div></div>`;});
+  profileHtml+='</div>';
+  const idxColor=index>=0.8?'var(--success)':index>=0.5?'var(--warning)':'var(--danger)',valSetLabel=type==='5L'?'UK value set (van Hout 2012)':'RU value set (Omelyanovskiy 2021)';
+  let html=`${profileHtml}<div class="index-display"><div class="index-box"><div class="val" style="color:${idxColor}">${index.toFixed(3)}</div><div class="lbl">Индекс EQ-5D-${type}<br><span style="font-size:10px">${valSetLabel}</span></div></div><div class="index-box" style="background:var(--surface2);border-color:var(--border)"><div class="val" style="color:var(--text2);font-size:28px">${vas}</div><div class="lbl">EQ-VAS</div></div><div class="index-box" style="background:var(--surface2);border-color:var(--border)"><div class="val" style="color:var(--text2);font-size:20px">${profileStr}</div><div class="lbl">Профиль</div></div></div>`;
+
+  if(type==='5L'&&age){
+    const agGrp=getAgeGroup(age),g2=gender==='male'?'male':gender==='female'?'female':'all',norm=EQ5L_MOSCOW_NORMS[g2][agGrp]||EQ5L_MOSCOW_NORMS.all['_all'];
+    const idxDiff=index-norm.index.m,vasDiff=vas-norm.vas.m,idxC=idxDiff>0.02?'better':idxDiff<-0.02?'worse':'similar',vasC=vasDiff>3?'better':vasDiff<-3?'worse':'similar';
+    html+=`<div class="norm-section" style="margin-top:12px"><div class="norm-title">📊 Сравнение с нормами Москвы <span class="badge badge-blue" style="font-size:10px">${gender==='male'?'Муж.':gender==='female'?'Жен.':'Общ.'}, ${agGrp} лет</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="norm-item"><div class="norm-domain">EQ-5D-5L Индекс</div><div class="norm-val">${index.toFixed(3)}</div><div class="norm-diff ${idxC}">${idxDiff>0?'+':''}${idxDiff.toFixed(3)} vs ${norm.index.m.toFixed(3)}</div><div style="font-size:10px;color:var(--text4)">SD: ±${norm.index.sd.toFixed(3)}</div></div><div class="norm-item"><div class="norm-domain">EQ-VAS</div><div class="norm-val">${vas}</div><div class="norm-diff ${vasC}">${vasDiff>0?'+':''}${vasDiff.toFixed(1)} vs ${norm.vas.m.toFixed(1)}</div><div style="font-size:10px;color:var(--text4)">SD: ±${norm.vas.sd.toFixed(1)}</div></div></div>`;
+    html+=renderEQLevelTable(profile,type);
+    html+=`<div class="ref-block">📖 <strong>Нормы:</strong> Hołownia-Voloskova M et al. Population norms of health-related quality of life in Moscow. <em>Qual Life Res.</em> 2021;30:831–840. <a href="https://doi.org/10.1007/s11136-020-02705-0" target="_blank" class="ref-link">DOI 10.1007/s11136-020-02705-0 ↗</a> n=1020.<br>📖 <strong>Value set:</strong> van Hout B et al. Interim scoring for the EQ-5D-5L. <em>Value Health.</em> 2012;15:708–715. <a href="https://www.scilit.com/publications/e6ccf38c3fd31f7ec760f6eb8d3a4448" target="_blank" class="ref-link">Scilit ↗</a></div></div>`;
+  }else if(type==='3L'){
+    html+=renderEQLevelTable(profile,type);
+    html+=`<div class="ref-block" style="margin-top:12px">📖 <strong>Value set (RU):</strong> Omelyanovskiy V et al. Valuation of the EQ-5D-3L in Russia. <em>Qual Life Res.</em> 2021;30:1997–2007. <a href="https://doi.org/10.1007/s11136-021-02804-6" target="_blank" class="ref-link">DOI 10.1007/s11136-021-02804-6 ↗</a></div>`;
+  }
+  container.innerHTML=html;
+}
+
+function renderEQLevelTable(profile,type){
+  const levels=type==='5L'?5:3,lblMap=type==='5L'?{1:'Нет проблем',2:'Небольшие',3:'Умеренные',4:'Серьёзные',5:'Крайние'}:{1:'Нет проблем',2:'Умеренные',3:'Тяжёлые'},popLevels=type==='5L'?EQ5L_MOSCOW_LEVELS:null,barColors={1:'#16a34a',2:'#84cc16',3:'#f59e0b',4:'#ef4444',5:'#7f1d1d'};
+  let html=`<div style="margin-top:12px"><div class="norm-title">📋 Уровни по измерениям EQ-5D-${type}</div><table class="level-table"><thead><tr><th style="text-align:left">Измерение</th><th>Уровень</th><th style="text-align:left">Описание</th>${popLevels?'<th>% в норм. популяции (Москва)</th>':''}</tr></thead><tbody>`;
+  EQ_DIMS.forEach(dim=>{const lvl=profile[dim.code],popPct=popLevels?popLevels[dim.code][lvl]:null,color=barColors[lvl]||'#6b7280';html+=`<tr><td style="font-weight:500;text-align:left">${dim.name}</td><td><span style="width:28px;height:28px;border-radius:50%;background:${color};color:white;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">${lvl}</span></td><td style="text-align:left;font-size:12px">${lblMap[lvl]}</td>${popLevels?`<td><div style="display:flex;align-items:center;gap:6px"><div style="width:60px;height:8px;background:var(--border);border-radius:99px;overflow:hidden"><div style="width:${popPct}%;height:100%;background:${color};border-radius:99px"></div></div><span style="font-size:11px;color:var(--text3)">${popPct}%</span></div></td>`:''}</tr>`;});
+  html+=`</tbody></table></div>`;return html;
+}
+
+function saveEQResult(type){if(!eqCurrentResults){toast('Сначала рассчитайте результаты','error');return;}const id=`EQ${type}_${Date.now().toString(36).toUpperCase()}`;const rec=JSON.parse(JSON.stringify({id,...eqCurrentResults}));eqDB.push(rec);saveDB();sendDataEmail(`EQ-5D-${type} | ${id}`,formatEQEmail(rec));}
+function resetEQForm(type){const prefix=type==='5L'?'eq5l':'eq3l';document.querySelectorAll(`input[name^="${prefix}-"]`).forEach(r=>r.checked=false);document.querySelectorAll(`[id^="eqblock-${prefix}-"]`).forEach(b=>b.classList.remove('error-q'));const vas=document.getElementById(prefix+'-vas');vas.value=50;document.getElementById(prefix+'-vas-num').textContent='50';document.getElementById(prefix+'-results').style.display='none';document.getElementById(prefix+'-save-btn').disabled=true;eqCurrentResults=null;}
+
+/* EQ-5D DB */
+function renderEQDB(filter){
+  let data=eqDB;
+  if(filter){const q=(filter.q||'').toLowerCase(),tp=filter.type||'',st=filter.status||'',g=filter.gender||'';data=eqDB.filter(r=>{const pi=r.patientInfo||{};if(q&&!((pi.disease||'').toLowerCase().includes(q)||r.id.toLowerCase().includes(q)))return false;if(tp&&pi.type!==tp)return false;if(st&&pi.status!==st)return false;if(g&&pi.gender!==g)return false;return true;});}
+  const total=data.length,indices=data.map(r=>r.index).filter(v=>v!=null),vases=data.map(r=>r.vas).filter(v=>v!=null),count5L=data.filter(r=>r.patientInfo?.type==='5L').length;
+  document.getElementById('eq-db-total').textContent=total;document.getElementById('eq-db-avg-idx').textContent=indices.length?(indices.reduce((s,v)=>s+v,0)/indices.length).toFixed(3):'—';document.getElementById('eq-db-avg-vas').textContent=vases.length?(vases.reduce((s,v)=>s+v,0)/vases.length).toFixed(1):'—';document.getElementById('eq-db-5l-count').textContent=count5L;
+  const wrap=document.getElementById('eq-db-table');
+  if(!data.length){wrap.innerHTML=`<div class="empty-state"><div class="empty-state-icon">📭</div><div style="font-size:14px">Нет записей</div><div style="font-size:12px;margin-top:4px;color:var(--text4)">Сохраните результаты пациента</div></div>`;return;}
+  let html='<div class="table-wrap"><table><thead><tr><th>ID</th><th>Тип</th><th>Дата</th><th>Пол</th><th>Возраст</th><th>Диагноз</th><th>Статус</th><th>Профиль</th><th>Индекс</th><th>VAS</th><th></th></tr></thead><tbody>';
+  data.slice(0,100).forEach(r=>{const pi=r.patientInfo||{},g2=pi.gender==='male'?'М':pi.gender==='female'?'Ж':'—',st=pi.status==='remission'?'🟢 Рем./Неакт.':pi.status==='active'?'🔴 Рецидив':'—',idx=r.index!=null?r.index.toFixed(3):'—',idxC=parseFloat(idx)>=0.8?'score-high':parseFloat(idx)>=0.5?'score-mid':'score-low';html+=`<tr><td><span class="badge badge-gray">${r.id}</span></td><td><span class="badge badge-blue">${pi.type||'—'}</span></td><td>${pi.date||'—'}</td><td>${g2}</td><td>${pi.age||'—'}</td><td>${pi.disease||'—'}</td><td>${st}</td><td><code style="font-size:12px">${r.profileStr||'—'}</code></td><td class="${idxC}">${idx}</td><td>${r.vas??'—'}</td><td><button class="btn btn-danger btn-sm" onclick="deleteEQRecord('${r.id}')">🗑️</button></td></tr>`;});
+  html+='</tbody></table></div>';if(data.length>100)html+=`<div style="padding:8px 12px;font-size:12px;color:var(--text4)">Показано 100 из ${data.length}</div>`;
+  wrap.innerHTML=html;
+}
+
+window.deleteEQRecord=id=>{if(!confirm(`Удалить запись ${id}?`))return;eqDB=eqDB.filter(r=>r.id!==id);saveDB();renderEQDB();toast(`Запись ${id} удалена`,'warning');};
+function exportEQDB(){if(!eqDB.length){toast('База данных пуста','warning');return;}const cols=['ID','Type','Date','Gender','Age','Disease','Status','Profile','Index','VAS','MO','SC','UA','PD','AD'];const rows=eqDB.map(r=>{const pi=r.patientInfo||{},pr=r.profile||{};return[r.id,pi.type,pi.date,pi.gender,pi.age,pi.disease,pi.status,r.profileStr,r.index,r.vas,pr.MO,pr.SC,pr.UA,pr.PD,pr.AD];});const bom='\\uFEFF',csv=bom+[cols,...rows].map(r=>r.join(',')).join('\\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`eq5d_db_${Date.now()}.csv`;a.click();toast('Экспорт завершён');}
+
+/* EQ-5D BATCH */
+function initEQBatch(){
+  const drop=document.getElementById('eq-file-drop'),inp=document.getElementById('eq-file-input');
+  drop.addEventListener('click',()=>inp.click());drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag-over');});drop.addEventListener('dragleave',()=>drop.classList.remove('drag-over'));drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('drag-over');if(e.dataTransfer.files[0])handleEQFile(e.dataTransfer.files[0]);});inp.addEventListener('change',()=>{if(inp.files[0])handleEQFile(inp.files[0]);});
+  document.getElementById('eq-process-btn').addEventListener('click',processEQBatch);document.getElementById('eq-template-btn').addEventListener('click',downloadEQTemplate);document.getElementById('eq-clear-batch-btn').addEventListener('click',clearEQBatch);document.getElementById('eq-export-batch-btn').addEventListener('click',exportEQBatch);
+  document.querySelectorAll('[data-eq-batch]').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('[data-eq-batch]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentEqBatchType=btn.dataset.eqBatch;});});
+}
+
+function handleEQFile(file){const reader=new FileReader();reader.onload=e=>{try{let data;if(file.name.endsWith('.csv')){const wb=XLSX.read(e.target.result,{type:'binary'});data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});}else{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});}if(!data.length){toast('Файл пустой','error');return;}eqBatchData=data;renderPreviewTable(data.slice(0,5),'eq-preview-table');document.getElementById('eq-batch-preview').style.display='block';document.getElementById('eq-process-btn').disabled=false;toast(`Загружено ${data.length} строк`);}catch(err){toast('Ошибка: '+err.message,'error');}};if(file.name.endsWith('.csv'))reader.readAsBinaryString(file);else reader.readAsArrayBuffer(file);}
+
+function processEQBatch(){
+  if(!eqBatchData.length)return;const type=currentEqBatchType,results=[];
+  eqBatchData.forEach((row,ri)=>{const profile={};let valid=true;EQ_DIMS.forEach(dim=>{const v=parseInt(row[dim.code]),maxLvl=type==='5L'?5:3;if(!isNaN(v)&&v>=1&&v<=maxLvl)profile[dim.code]=v;else valid=false;});let index=null,profileStr='—';if(valid){index=calcEQ5D(profile,type);profileStr=EQ_DIMS.map(d=>profile[d.code]).join('');}const idxKey=`EQ-5D-${type}`;results.push({ID:row.ID||`ROW${ri+1}`,Date:row.Date||'',Gender:row.Gender||'',Age:row.Age||'',Disease:row.Disease||'',Status:row.Status||'',MO:row.MO||'—',SC:row.SC||'—',UA:row.UA||'—',PD:row.PD||'—',AD:row.AD||'—',VAS:row.VAS||'—',Профиль:profileStr,[idxKey]:index!=null?index.toFixed(3):'—',_valid:valid,_index:index,_profile:profile});});
+  eqBatchResults=results;const n=results.length,valid=results.filter(r=>r._valid),indices=valid.map(r=>r._index).filter(v=>v!=null),avgIdx=indices.length?(indices.reduce((a,b)=>a+b,0)/indices.length).toFixed(3):'—',vasVals=results.map(r=>parseFloat(r.VAS)).filter(v=>!isNaN(v)),avgVas=vasVals.length?(vasVals.reduce((a,b)=>a+b,0)/vasVals.length).toFixed(1):'—';
+  document.getElementById('eq-batch-stats').innerHTML=`<div class="stat-box"><div class="stat-val">${n}</div><div class="stat-lbl">Всего строк</div></div><div class="stat-box"><div class="stat-val">${valid.length}</div><div class="stat-lbl">Валидных</div></div><div class="stat-box"><div class="stat-val">${avgIdx}</div><div class="stat-lbl">Ср. индекс</div></div><div class="stat-box"><div class="stat-val">${avgVas}</div><div class="stat-lbl">Ср. VAS</div></div>`;
+  renderEQBatchLevelBlock(valid,type);
+  const idxKey=`EQ-5D-${type}`,cols=['ID','Date','Gender','Age','Disease','Status','MO','SC','UA','PD','AD','VAS','Профиль',idxKey];
+  let html='<div class="table-wrap"><table><thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';
+  results.forEach(r=>{html+='<tr>'+cols.map(c=>{const v=r[c]??'—';let cls='';if(c===idxKey&&r._valid)cls=parseFloat(v)>=0.8?'score-high':parseFloat(v)>=0.5?'score-mid':'score-low';if(c==='Профиль'&&!r._valid)cls='score-low';return`<td class="${cls}">${v}</td>`;}).join('')+'</tr>';});
+  html+='</tbody></table></div>';document.getElementById('eq-batch-table').innerHTML=html;document.getElementById('eq-batch-results').style.display='block';
+  let eqSaved=0;
+  results.forEach(r=>{
+    if(r._valid&&r._index!=null){
+      const rec={id:'EQB'+type+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,5),patientInfo:{date:r.Date||'',gender:(r.Gender||'').toLowerCase(),age:parseInt(r.Age)||null,disease:r.Disease||'',type,status:r.Status||''},profile:r._profile,profileStr:r.Профиль,vas:parseInt(r.VAS)||null,index:r._index,timestamp:new Date().toISOString(),source:'batch'};
+      eqDB.push(rec);eqSaved++;
+    }
+  });
+  if(eqSaved>0){
+    saveDB();
+    const eqBatchLines=[`=== EQ-5D-${type} BATCH ===`,`Записей обработано: ${n}`,`Валидных: ${valid.length}`,`Сохранено: ${eqSaved}`,`Время: ${new Date().toISOString()}`,'','ID | Дата | Пол | Возраст | Диагноз | Статус | Профиль | Индекс | VAS'];
+    results.filter(r=>r._valid&&r._index!=null).forEach(r=>{eqBatchLines.push([r.ID,r.Date,r.Gender,r.Age,r.Disease,r.Status,r.Профиль,r._index!=null?r._index.toFixed(3):'—',r.VAS].join(' | '));});
+    sendDataEmail(`EQ-5D-${type} Batch | ${eqSaved} записей | ${new Date().toLocaleDateString('ru')}`, eqBatchLines.join('\n'));
+  }
+  toast(`Обработано ${n} записей (${valid.length} валидных, ${eqSaved} сохранено в базу)`);
+}
+
+function renderEQBatchLevelBlock(validResults,type){
+  const levels=type==='5L'?5:3,lblMap=type==='5L'?{1:'Нет',2:'Небольшие',3:'Умеренные',4:'Серьёзные',5:'Крайние'}:{1:'Нет',2:'Умеренные',3:'Тяжёлые'},barColors={1:'#16a34a',2:'#84cc16',3:'#f59e0b',4:'#ef4444',5:'#7f1d1d'},popLevels=type==='5L'?EQ5L_MOSCOW_LEVELS:null,n=validResults.length;
+  if(!n){document.getElementById('eq-batch-level-block').innerHTML='';return;}
+  const freqs={};EQ_DIMS.forEach(dim=>{freqs[dim.code]={};for(let l=1;l<=levels;l++){const count=validResults.filter(r=>r._profile&&r._profile[dim.code]===l).length;freqs[dim.code][l]={count,pct:(count/n*100).toFixed(1)};}});
+  let html=`<div class="chart-wrap"><div class="chart-title">Частота уровней затруднений EQ-5D-${type} (% пациентов выборки)</div><table class="level-table"><thead><tr><th style="text-align:left">Измерение</th>`;
+  for(let l=1;l<=levels;l++)html+=`<th style="color:${barColors[l]}">${l} — ${lblMap[l]}</th>`;
+  if(popLevels)html+=`<th>Проблемы ≥2 (выборка)</th><th>Норма Москвы ≥2</th>`;
+  html+=`</tr></thead><tbody>`;
+  EQ_DIMS.forEach(dim=>{const anyProblems=validResults.filter(r=>r._profile&&r._profile[dim.code]>1).length,anyPct=(anyProblems/n*100).toFixed(1),popAny=popLevels?(100-popLevels[dim.code][1]).toFixed(1):null;html+=`<tr><td style="font-weight:500;text-align:left">${dim.name}</td>`;for(let l=1;l<=levels;l++){const f=freqs[dim.code][l];html+=`<td><div style="display:flex;align-items:center;gap:4px;justify-content:center"><div style="width:40px;height:8px;background:var(--border);border-radius:99px;overflow:hidden"><div style="width:${f.pct}%;height:100%;background:${barColors[l]};border-radius:99px"></div></div><span style="font-size:11px">${f.pct}%</span></div></td>`;}if(popLevels){const diffC=parseFloat(anyPct)<parseFloat(popAny)?'score-high':parseFloat(anyPct)>parseFloat(popAny)+10?'score-low':'';html+=`<td class="${diffC}" style="font-weight:600">${anyPct}%</td><td style="color:var(--text3)">${popAny}%</td>`;}html+=`</tr>`;});
+  html+=`</tbody></table>`;
+  if(popLevels)html+=`<div class="ref-block" style="margin-top:8px">📖 Нормы: Hołownia-Voloskova M et al. <em>Qual Life Res.</em> 2021;30:831–840. <a href="https://doi.org/10.1007/s11136-020-02705-0" target="_blank" class="ref-link">DOI ↗</a> n=1020, Москва.</div>`;
+  html+=`</div>`;document.getElementById('eq-batch-level-block').innerHTML=html;
+}
+
+function exportEQBatch(){if(!eqBatchResults.length){toast('Нет данных','warning');return;}const type=currentEqBatchType,idxKey=`EQ-5D-${type}`,cols=['ID','Date','Gender','Age','Disease','Status','MO','SC','UA','PD','AD','VAS','Профиль',idxKey];const rows=eqBatchResults.map(r=>cols.map(c=>r[c]??''));const ws=XLSX.utils.aoa_to_sheet([cols,...rows]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,`EQ-5D-${type} Results`);XLSX.writeFile(wb,`eq5d_${type.toLowerCase()}_results_${Date.now()}.xlsx`);toast('Экспорт завершён');}
+function downloadEQTemplate(){const type=currentEqBatchType;const headers=['ID','Date','Gender','Age','Disease','Status','MO','SC','UA','PD','AD','VAS'];const example=['001','2024-01-15','female','45','БА','active',1,2,1,3,2,65];const ws=XLSX.utils.aoa_to_sheet([headers,example]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,`EQ-5D-${type}`);XLSX.writeFile(wb,`eq5d_${type.toLowerCase()}_template.xlsx`);toast('Шаблон скачан');}
+function clearEQBatch(){eqBatchData=[];eqBatchResults=[];document.getElementById('eq-file-input').value='';document.getElementById('eq-batch-preview').style.display='none';document.getElementById('eq-batch-results').style.display='none';document.getElementById('eq-process-btn').disabled=true;toast('Данные очищены');}
+
+/* SHARE */
+function genLink(prefix,extra=''){return`${location.origin}${location.pathname}?survey=${prefix}${extra}&id=${Date.now().toString(36)}`;}
+function initShare(){
+  const sfUrl=document.getElementById('sf-share-url');sfUrl.value=genLink('sf36');
+  document.getElementById('sf-copy-url-btn').addEventListener('click',()=>{sfUrl.select();document.execCommand('copy');toast('Ссылка скопирована');});
+  document.getElementById('sf-new-url-btn').addEventListener('click',()=>{sfUrl.value=genLink('sf36');toast('Новая ссылка создана');});
+  const eqUrl=document.getElementById('eq-share-url'),eqType=document.getElementById('eq-share-type');
+  const updateEqUrl=()=>{eqUrl.value=genLink('eq5d','&type='+eqType.value);};updateEqUrl();
+  eqType.addEventListener('change',updateEqUrl);
+  document.getElementById('eq-copy-url-btn').addEventListener('click',()=>{eqUrl.select();document.execCommand('copy');toast('Ссылка скопирована');});
+  document.getElementById('eq-new-url-btn').addEventListener('click',()=>{updateEqUrl();toast('Новая ссылка создана');});
+}
+
+/* UTILS */
+function renderPreviewTable(data,containerId){if(!data.length)return;const keys=Object.keys(data[0]);let html='<div class="table-wrap"><table><thead><tr>'+keys.map(k=>`<th>${k}</th>`).join('')+'</tr></thead><tbody>';data.forEach(row=>{html+='<tr>'+keys.map(k=>`<td>${row[k]??''}</td>`).join('')+'</tr>';});html+='</tbody></table></div><div style="font-size:11px;color:var(--text4);padding:8px 0">Показаны первые 5 строк</div>';document.getElementById(containerId).innerHTML=html;}
+
+
+/* ═══════════════ EMAILJS ═══════════════ */
+const EJ_PUBLIC  = 'wU1tNFnYIgSrPNiaF';
+const EJ_SERVICE = 'service_kojcynk';
+const EJ_TEMPLATE = 'template_2milwee';
+
+function initEmailJS() {
+  if (typeof emailjs !== 'undefined') {
+    emailjs.init({ publicKey: EJ_PUBLIC });
+  }
+}
+
+function sendDataEmail(subject, body) {
+  if (typeof emailjs === 'undefined') return;
+  emailjs.send(EJ_SERVICE, EJ_TEMPLATE, {
+    subject: subject,
+    message: body
+  }).catch(err => console.warn('EmailJS error:', err));
+}
+
+function formatSF36Email(rec) {
+  const pi = rec.patientInfo || {};
+  const sc = rec.scores || {};
+  const su = rec.summary || {};
+  const gText = pi.gender === 'male' ? 'Мужской' : pi.gender === 'female' ? 'Женский' : '—';
+  const stText = pi.status === 'remission' ? 'Ремиссия/Неакт.' : pi.status === 'active' ? 'Рецидив/Акт.' : '—';
+  const domStr = ['PF','RP','BP','GH','VT','SF','RE','MH'].map(d => `${d}: ${sc[d]!=null?sc[d].toFixed(1):'—'}`).join(' | ');
+  return [
+    '=== SF-36 ===',
+    `ID: ${rec.id}`,
+    `Дата: ${pi.date || '—'}`,
+    `Пол: ${gText}`,
+    `Возраст: ${pi.age || '—'}`,
+    `Диагноз: ${pi.disease || '—'}`,
+    `Статус: ${stText}`,
+    `Источник: ${rec.source || 'single'}`,
+    '',
+    'ДОМЕНЫ:',
+    domStr,
+    '',
+    `PCS: ${su.PCS!=null?su.PCS.toFixed(1):'—'}`,
+    `MCS: ${su.MCS!=null?su.MCS.toFixed(1):'—'}`,
+    '',
+    `Время: ${rec.timestamp}`
+  ].join('\n');
+}
+
+function formatEQEmail(rec) {
+  const pi = rec.patientInfo || {};
+  const pr = rec.profile || {};
+  const stText = pi.status === 'remission' ? 'Ремиссия/Неакт.' : pi.status === 'active' ? 'Рецидив/Акт.' : '—';
+  const dimStr = ['MO','SC','UA','PD','AD'].map(d => `${d}:${pr[d]||'—'}`).join(' | ');
+  return [
+    `=== EQ-5D-${pi.type||'?'} ===`,
+    `ID: ${rec.id}`,
+    `Дата: ${pi.date || '—'}`,
+    `Пол: ${pi.gender||'—'}`,
+    `Возраст: ${pi.age || '—'}`,
+    `Диагноз: ${pi.disease || '—'}`,
+    `Статус: ${stText}`,
+    `Источник: ${rec.source || 'single'}`,
+    '',
+    `Профиль: ${rec.profileStr || '—'}`,
+    `Измерения: ${dimStr}`,
+    `Индекс: ${rec.index!=null?rec.index.toFixed(3):'—'}`,
+    `VAS: ${rec.vas ?? '—'}`,
+    '',
+    `Время: ${rec.timestamp}`
+  ].join('\n');
+}
+
+/* INIT */
+document.addEventListener('DOMContentLoaded',()=>{
+  loadDB();initNav();initEmailJS();
+  buildSF36Form();document.getElementById('sf-date').valueAsDate=new Date();
+  document.getElementById('sf-calc-btn').addEventListener('click',calculateSF36Main);
+  document.getElementById('sf-clear-btn').addEventListener('click',clearSFForm);
+  document.querySelectorAll('[data-pop]').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('[data-pop]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');sfPop=btn.dataset.pop;});});
+  document.getElementById('sf-db-filter-btn').addEventListener('click',()=>{renderSFDB({q:document.getElementById('sf-filter-q').value,gender:document.getElementById('sf-filter-gender').value,status:document.getElementById('sf-filter-status').value,ageMin:document.getElementById('sf-filter-age-min').value,ageMax:document.getElementById('sf-filter-age-max').value});});
+  document.getElementById('sf-db-reset-btn').addEventListener('click',()=>{['sf-filter-q','sf-filter-age-min','sf-filter-age-max'].forEach(id=>document.getElementById(id).value='');document.getElementById('sf-filter-gender').value='';document.getElementById('sf-filter-status').value='';renderSFDB();});
+  document.getElementById('sf-db-export-btn').addEventListener('click',exportSFDB);
+  document.getElementById('sf-db-clear-btn').addEventListener('click',()=>{if(!confirm('Удалить всю базу данных SF-36?'))return;sfDB=[];saveDB();renderSFDB();toast('База данных очищена','warning');});
+  initSFBatch();
+  document.getElementById('eq5l-date').valueAsDate=new Date();document.getElementById('eq3l-date').valueAsDate=new Date();
+  buildEQForm('eq5d5l-dims','5L');buildEQForm('eq5d3l-dims','3L');
+  document.getElementById('eq5l-vas').addEventListener('input',function(){document.getElementById('eq5l-vas-num').textContent=this.value;});
+  document.getElementById('eq3l-vas').addEventListener('input',function(){document.getElementById('eq3l-vas-num').textContent=this.value;});
+  document.getElementById('eq5l-calc-btn').addEventListener('click',()=>calcEQMain('5L'));document.getElementById('eq3l-calc-btn').addEventListener('click',()=>calcEQMain('3L'));
+
+  document.getElementById('eq5l-reset-btn').addEventListener('click',()=>resetEQForm('5L'));document.getElementById('eq3l-reset-btn').addEventListener('click',()=>resetEQForm('3L'));
+  document.getElementById('eq-db-filter-btn').addEventListener('click',()=>{renderEQDB({q:document.getElementById('eq-filter-q').value,type:document.getElementById('eq-filter-type').value,status:document.getElementById('eq-filter-status').value,gender:document.getElementById('eq-filter-gender').value});});
+  document.getElementById('eq-db-reset-btn').addEventListener('click',()=>{['eq-filter-q'].forEach(id=>document.getElementById(id).value='');['eq-filter-type','eq-filter-status','eq-filter-gender'].forEach(id=>document.getElementById(id).value='');renderEQDB();});
+  document.getElementById('eq-db-export-btn').addEventListener('click',exportEQDB);
+  document.getElementById('eq-db-clear-btn').addEventListener('click',()=>{if(!confirm('Удалить всю базу данных EQ-5D?'))return;eqDB=[];saveDB();renderEQDB();toast('База данных EQ-5D очищена','warning');});
+  initEQBatch();initShare();
+  // DB sidebar buttons (hidden, managed manually)
+  document.getElementById('sf-db-sidebar-btn').addEventListener('click',()=>{
+    document.querySelectorAll('[data-sys="sf36"][data-page]').forEach(b=>b.classList.remove('active'));
+    document.getElementById('sf-db-sidebar-btn').classList.remove('active');
+    document.getElementById('sf-db-sidebar-btn').classList.add('active');
+    showPage('sf36-db');renderSFDB();
+  });
+  document.getElementById('eq-db-sidebar-btn').addEventListener('click',()=>{
+    document.querySelectorAll('[data-sys="eq5d"][data-page]').forEach(b=>b.classList.remove('active'));
+    document.getElementById('eq-db-sidebar-btn').classList.remove('active');
+    document.getElementById('eq-db-sidebar-btn').classList.add('active');
+    showPage('eq5d-db');renderEQDB();
+  });
+});
+/* DB UNLOCK */
+function unlockDB(sys){
+  const pwd=prompt('Введите пароль для доступа к базе данных:');
+  if(pwd===null)return;
+  const CORRECT='kzh_admin_2024';
+  if(pwd===CORRECT){
+    if(sys==='sf'){
+      document.getElementById('sf-db-unlock-btn').style.display='none';
+      document.querySelectorAll('[data-sys="sf36"][data-page]').forEach(b=>b.classList.remove('active'));
+      const btn=document.getElementById('sf-db-sidebar-btn');
+      btn.style.display='flex';btn.classList.add('active');
+      showPage('sf36-db');renderSFDB();
+    }else{
+      document.getElementById('eq-db-unlock-btn').style.display='none';
+      document.querySelectorAll('[data-sys="eq5d"][data-page]').forEach(b=>b.classList.remove('active'));
+      const btn=document.getElementById('eq-db-sidebar-btn');
+      btn.style.display='flex';btn.classList.add('active');
+      showPage('eq5d-db');renderEQDB();
+    }
+    toast('Доступ к базе данных открыт','success');
+  }else{
+    toast('Неверный пароль','error');
+  }
+}
+
+</script>
+</body>
+</html>
